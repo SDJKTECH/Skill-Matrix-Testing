@@ -188,6 +188,7 @@ def build_claude_command(
     agent: str | None = None,
     permission_mode: str | None = None,
     allowed_tools: list[str] | None = None,
+    resume: str | None = None,
 ) -> list[str]:
     """Build a non-interactive Claude Code CLI command."""
     if not prompt.strip():
@@ -199,6 +200,11 @@ def build_claude_command(
         "--output-format",
         "json",
     ]
+
+    if resume:
+        if not re.fullmatch(r"[A-Za-z0-9-]+", resume):
+            raise ValueError("Invalid session id to resume.")
+        command.extend(["--resume", resume])
 
     if agent:
         if not agent.strip():

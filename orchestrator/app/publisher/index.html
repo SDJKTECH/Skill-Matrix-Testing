@@ -1,0 +1,166 @@
+<!doctype html>
+<!-- Jira Publisher: a small chat page. Paste a requirement, read the proposed
+     Story/Subtask hierarchy, then press Confirm to create it in Jira (project SMT). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jira Publisher</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e;
+    --line: #e1e0d9; --accent: #2a78d6; --mine: #e8f1fc; --good: #0ca30c; --bad: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7;
+            --line: #2c2c2a; --accent: #3987e5; --mine: #17304f; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink);
+         font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; min-height: 100vh; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; }
+  h1 { font-size: 20px; margin: 0; flex: 1 1 auto; }
+  .hint { color: var(--ink-2); font-size: 13px; }
+  button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+           border-radius: 6px; padding: 6px 14px; cursor: pointer; }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.confirm { border-color: var(--good); color: var(--good); font-weight: 600; }
+  #log { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; padding: 4px 0 12px; }
+  .msg { border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; background: var(--surface);
+         white-space: pre-wrap; overflow-wrap: anywhere; max-width: 100%; }
+  .msg.me { background: var(--mine); align-self: flex-end; max-width: 90%; }
+  .msg.err { border-color: var(--bad); color: var(--bad); }
+  .msg .who { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+              color: var(--ink-2); margin-bottom: 2px; }
+  .empty { color: var(--ink-2); border: 1px dashed var(--line); border-radius: 10px; padding: 18px; }
+  form { position: sticky; bottom: 0; background: var(--page); padding: 8px 0 12px; border-top: 1px solid var(--line); }
+  textarea { width: 100%; min-height: 110px; max-height: 40vh; resize: vertical; font: inherit; color: var(--ink);
+             background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+  textarea:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+  .row .grow { flex: 1 1 auto; }
+  .spin { display: inline-block; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Jira Publisher</h1>
+    <span class="hint">Project SMT · creates Stories and Subtasks only</span>
+    <button id="new" type="button">New session</button>
+  </header>
+
+  <section id="log" aria-live="polite">
+    <div class="empty" id="empty">
+      Paste a requirement below. The agent searches SMT, proposes the hierarchy
+      (Epic → Story → Subtask) and creates nothing until you press <b>Confirm</b>.
+    </div>
+  </section>
+
+  <form id="form">
+    <label for="text" class="hint">Requirement, or your reply to the proposal</label>
+    <textarea id="text" placeholder="As an employee, I want to attempt and review quizzes…" maxlength="20000"></textarea>
+    <div class="row">
+      <span class="hint grow" id="status"></span>
+      <button id="confirm" type="button" class="confirm" disabled
+              title="Create the proposed Stories and Subtasks in Jira">Confirm</button>
+      <button id="send" type="submit" class="primary">Send</button>
+    </div>
+  </form>
+</main>
+
+<script>
+"use strict";
+const log = document.getElementById("log");
+const text = document.getElementById("text");
+const sendButton = document.getElementById("send");
+const confirmButton = document.getElementById("confirm");
+const status = document.getElementById("status");
+let sessionId = null;   // a page reload starts a new session
+let busy = false;
+
+function add(kind, who, body) {
+  document.getElementById("empty")?.remove();
+  const box = document.createElement("div");
+  box.className = `msg ${kind}`;
+  const label = document.createElement("span");
+  label.className = "who";
+  label.textContent = who;
+  box.append(label, document.createTextNode(body));   // text only: nothing is run
+  log.append(box);
+  box.scrollIntoView({ block: "end" });
+}
+
+function setBusy(on, message) {
+  busy = on;
+  sendButton.disabled = on;
+  confirmButton.disabled = on || !sessionId;
+  status.replaceChildren();
+  if (on) {
+    const icon = document.createElement("span");
+    icon.className = "spin";
+    icon.textContent = "◐";
+    status.append(icon, ` ${message || "Working…"} this can take a minute or two.`);
+  }
+}
+
+async function talk(message) {
+  if (busy) return;
+  add("me", "You", message);
+  setBusy(true, "The agent is working…");
+  try {
+    const response = await fetch("/publisher/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, session_id: sessionId }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.detail || `HTTP ${response.status}`);
+    sessionId = body.session_id;
+    add("agent", "Publisher", body.reply);
+  } catch (error) {
+    add("err", "Error", String(error.message || error));
+  }
+  setBusy(false);
+  text.focus();
+}
+
+document.getElementById("form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const message = text.value.trim();
+  if (!message) return;
+  text.value = "";
+  talk(message);
+});
+
+text.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+    event.preventDefault();
+    document.getElementById("form").requestSubmit();
+  }
+});
+
+confirmButton.addEventListener("click", () => talk("confirm"));
+
+document.getElementById("new").addEventListener("click", () => {
+  if (busy) return;
+  sessionId = null;
+  log.replaceChildren();
+  const empty = document.createElement("div");
+  empty.className = "empty";
+  empty.id = "empty";
+  empty.textContent = "New session. Paste a requirement below.";
+  log.append(empty);
+  setBusy(false);
+});
+
+setBusy(false);
+</script>
+</body>
+</html>

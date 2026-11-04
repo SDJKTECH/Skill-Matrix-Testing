@@ -222,6 +222,8 @@ class JiraApi:
         summary: str,
         description: str,
         parent: str | None = None,
+        labels: list[str] | None = None,
+        priority: str | None = None,
     ) -> str:
         """Create an issue (under `parent`, if given) and return its key."""
         fields: dict = {
@@ -233,6 +235,12 @@ class JiraApi:
 
         if parent:
             fields["parent"] = {"key": parent}
+
+        if labels:
+            fields["labels"] = labels
+
+        if priority:
+            fields["priority"] = {"name": priority}
 
         created = self.request("POST", "/issue", {"fields": fields})
         key = created.get("key") if isinstance(created, dict) else None

@@ -124,6 +124,8 @@ class Settings(BaseSettings):
     jira_epic_type: str = "Epic"
     jira_story_type: str = "Story"
     jira_subtask_type: str = "Subtask"
+    # The one Jira project the publisher agent may write to (never any other).
+    publisher_project: str = "SMT"
     # Plan GitHub issues that carry requirement_label into Jira Epics, Stories and
     # Subtasks automatically (needs GITHUB_REPO, the Jira settings and polling on).
     # Off by default: each requirement costs a planner run and creates Jira issues.
