@@ -40,8 +40,6 @@ def _isolate_from_local_env(monkeypatch):
         "JIRA_BASE_URL": "",
         "JIRA_EMAIL": "",
         "JIRA_API_TOKEN": "",
-        "GITHUB_TOKEN": "",
-        "PROJECT_TOKEN": "",
     }.items():
         monkeypatch.setenv(name, value)
     get_settings.cache_clear()
