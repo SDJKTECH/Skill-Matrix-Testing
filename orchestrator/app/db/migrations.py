@@ -52,6 +52,12 @@ def migrate_task_columns(engine: Engine) -> None:
         "blocked_by": "TEXT",
         "jira_item_id": "INTEGER",
         "story_branch": "VARCHAR(250)",
+        "story_run_id": "INTEGER",
+        "files": "TEXT",
+        "complexity": "VARCHAR(20)",
+        "parallel_safe": "BOOLEAN",
+        "expected_outcome": "TEXT",
+        "context_notes": "TEXT",
     }
 
     with engine.begin() as connection:

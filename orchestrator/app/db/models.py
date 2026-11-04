@@ -4,7 +4,9 @@ from datetime import UTC, datetime
 from enum import Enum
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -86,6 +88,55 @@ class Milestone(Base):
     )
 
 
+class StoryRun(Base):
+    """One run of a Jira Story: its plan, state and cost. A story run owns its tasks."""
+
+    __tablename__ = "story_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    story_key: Mapped[str] = mapped_column(String(50), index=True)
+    project_id: Mapped[int | None] = mapped_column(
+        ForeignKey("projects.id"), nullable=True, index=True
+    )
+    base_branch: Mapped[str] = mapped_column(String(250), default="development")
+    # checked, planned, running, completed, failed, needs_review, cancelled
+    status: Mapped[str] = mapped_column(String(30), default="checked", index=True)
+    # The validated plan as JSON (per-task files, depends_on, doc_target, ...).
+    plan: Mapped[str | None] = mapped_column(Text, nullable=True)
+    doc_target: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    cost_usd: Mapped[float] = mapped_column(Float, default=0.0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+    finished_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    tasks: Mapped[list["Task"]] = relationship(back_populates="story_run")
+    concerns: Mapped[list["PlanConcern"]] = relationship(
+        back_populates="story_run", cascade="all, delete-orphan"
+    )
+
+
+class PlanConcern(Base):
+    """A problem the planner reported about the story or one of its tasks."""
+
+    __tablename__ = "plan_concerns"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    story_run_id: Mapped[int] = mapped_column(ForeignKey("story_runs.id"), index=True)
+    # None means the concern is about the story as a whole.
+    task_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tasks.id"), nullable=True, index=True
+    )
+    text: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
+
+    story_run: Mapped["StoryRun"] = relationship(back_populates="concerns")
+
+
 class Task(Base):
     """One unit of work, built on its own branch and worktree."""
 
@@ -123,11 +174,23 @@ class Task(Base):
     blocked_by: Mapped[str | None] = mapped_column(Text, nullable=True)
     # The Story branch this task's work was merged into once it passed review.
     story_branch: Mapped[str | None] = mapped_column(String(250), nullable=True)
+    # The story run that created this task (None for tasks from polling or the API).
+    story_run_id: Mapped[int | None] = mapped_column(
+        ForeignKey("story_runs.id"), nullable=True, index=True
+    )
+    # Set by the story planner: files the task will touch (JSON list), size, whether
+    # it may run alongside others, what done looks like, and notes for the agents.
+    files: Mapped[str | None] = mapped_column(Text, nullable=True)
+    complexity: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    parallel_safe: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    expected_outcome: Mapped[str | None] = mapped_column(Text, nullable=True)
+    context_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now
     )
 
     milestone: Mapped["Milestone"] = relationship(back_populates="tasks")
+    story_run: Mapped["StoryRun | None"] = relationship(back_populates="tasks")
     jira_item: Mapped["JiraItem | None"] = relationship()
     agent_runs: Mapped[list["AgentRun"]] = relationship(
         back_populates="task",
