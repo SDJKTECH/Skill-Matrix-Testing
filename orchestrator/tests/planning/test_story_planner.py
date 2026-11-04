@@ -104,6 +104,49 @@ def test_files_not_in_the_file_list_are_rejected() -> None:
     assert "SMT-10 names files not in the file list" in rejected(data)
 
 
+def test_a_file_another_sub_task_creates_is_allowed_and_makes_it_wait() -> None:
+    data = good_plan()
+    data["tasks"]["SMT-11"]["depends_on"] = []
+    data["tasks"]["SMT-11"]["files"] = ["backend/reports/csv_helper.py"]
+
+    plan = check(data)
+
+    assert plan.tasks[1].depends_on == ["SMT-10"]
+    assert any("SMT-11 waits for SMT-10" in item for item in plan.concerns)
+
+
+def test_a_sub_task_that_uses_a_file_created_later_in_jira_order_waits_for_it() -> None:
+    data = good_plan()
+    data["tasks"]["SMT-10"]["files"] = ["backend/reports/button.py"]
+    data["tasks"]["SMT-10"]["depends_on"] = []
+    data["tasks"]["SMT-11"]["new_files"] = ["backend/reports/button.py"]
+    data["tasks"]["SMT-11"]["depends_on"] = []
+
+    plan = check(data)
+
+    assert plan.tasks[0].depends_on == ["SMT-11"]
+    assert plan.tasks[1].depends_on == []
+
+
+def test_two_sub_tasks_that_need_each_others_new_files_form_a_cycle() -> None:
+    data = good_plan()
+    data["tasks"]["SMT-10"]["files"] = ["backend/reports/b.py"]
+    data["tasks"]["SMT-10"]["new_files"] = ["backend/reports/a.py"]
+    data["tasks"]["SMT-10"]["depends_on"] = []
+    data["tasks"]["SMT-11"]["files"] = ["backend/reports/a.py"]
+    data["tasks"]["SMT-11"]["new_files"] = ["backend/reports/b.py"]
+    data["tasks"]["SMT-11"]["depends_on"] = []
+
+    assert "form a cycle" in rejected(data)
+
+
+def test_a_file_nobody_creates_is_still_rejected() -> None:
+    data = good_plan()
+    data["tasks"]["SMT-11"]["files"] = ["backend/reports/ghost.py"]
+
+    assert "SMT-11 names files not in the file list" in rejected(data)
+
+
 def test_new_files_may_not_leave_the_project() -> None:
     data = good_plan()
     data["tasks"]["SMT-10"]["new_files"] = ["../outside.py"]

@@ -192,6 +192,17 @@ def validate_plan(
     known = set(files)
     graph: dict[str, list[str]] = {}
     plans: dict[str, TaskPlan] = {}
+    notes: list[str] = []
+    # A file another sub-task of this Story creates does not exist yet, but a
+    # sub-task may build on it (for example a screen on the component before it).
+    created_by: dict[str, str] = {}
+    for key in jira_keys:
+        entry = planned.get(key)
+        if isinstance(entry, dict):
+            for path in _strings(entry.get("new_files")):
+                cleaned_path = _clean_path(path)
+                if cleaned_path:
+                    created_by.setdefault(cleaned_path, key)
 
     for key in jira_keys:
         entry = planned.get(key)
@@ -199,7 +210,9 @@ def validate_plan(
             continue
 
         task_files = [path.replace("\\", "/") for path in _strings(entry.get("files"))]
-        unknown = [path for path in task_files if path not in known]
+        unknown = [
+            path for path in task_files if path not in known and path not in created_by
+        ]
         if unknown:
             errors.append(f"{key} names files not in the file list: {unknown}")
 
@@ -209,6 +222,13 @@ def validate_plan(
             errors.append(f"{key} has a new file outside the project: {new_files}")
 
         depends = _strings(entry.get("depends_on"))
+        for path in task_files:
+            maker = created_by.get(path)
+            if path not in known and maker and maker != key and maker not in depends:
+                depends.append(maker)
+                notes.append(
+                    f"{key} waits for {maker}: it uses {path}, which {maker} creates"
+                )
         bad = [dep for dep in depends if dep not in jira_keys or dep == key]
         if bad:
             errors.append(f"{key} depends on an unknown key or itself: {bad}")
@@ -247,7 +267,7 @@ def validate_plan(
             "The sequencer's plan was rejected:\n- " + "\n- ".join(errors)
         )
 
-    concerns = _strings(data.get("concerns"))
+    concerns = _strings(data.get("concerns")) + notes
     _serialise_shared_files(plans, jira_keys, graph, concerns)
 
     return StoryPlan(

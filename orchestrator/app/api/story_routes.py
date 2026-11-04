@@ -1,6 +1,8 @@
 # HTTP endpoint that plans a Jira Story: reads it from Jira, runs the pre-run checks,
 # asks the story sequencer to order the sub-tasks and saves the plan as a story run.
 # It writes nothing to Jira and starts no builder.
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -17,6 +19,8 @@ from orchestrator.app.jira.story_run import latest_planned_run, start_story_run
 from orchestrator.app.planning.dependencies import get_blockers
 from orchestrator.app.planning.story_planner import StorySequencer
 from orchestrator.app.planning.story_service import plan_story
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["stories"])
 
@@ -90,6 +94,7 @@ def plan_story_endpoint(
             status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
         ) from exc
     except PlanningError as exc:
+        logger.warning("Story %s could not be planned: %s", story_key, exc)
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return StoryPlanResponse(

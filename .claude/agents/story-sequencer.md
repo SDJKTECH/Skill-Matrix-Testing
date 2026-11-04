@@ -20,7 +20,7 @@ Read context in this order, and stop as soon as you know enough:
 
 For each sub-task decide:
 
-- `files`: existing files from the file list that it will read or change.
+- `files`: files it will read or change. Normally existing files from the file list. A file that an earlier sub-task of this Story creates may also be listed here; give it in that sub-task's `new_files` and add that sub-task to this one's `depends_on`.
 - `new_files`: files it will create (relative paths inside the project).
 - `depends_on`: other sub-task keys whose code it needs first. Be conservative: independent unless it really needs the other's output.
 - `parallel_safe`: true if it can run at the same time as the others without editing the same files.
@@ -37,7 +37,7 @@ For the story decide `doc_target`: the path of the doc to update (it must be ins
 - Read-only. Never modify, create or delete files, and never run commands.
 - You must NOT add, drop, merge or split sub-tasks, and must NOT change their acceptance criteria. Report any problem in `concerns` instead.
 - Use exactly the sub-task keys you were given. Never output a cycle.
-- Only name files from the file list in `files`.
+- In `files`, only name files from the file list, or files another sub-task of this Story lists in its `new_files`. Never invent any other path.
 
 ## Completion report
 
