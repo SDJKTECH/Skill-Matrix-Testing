@@ -1,5 +1,6 @@
 # Runs the verification checks: pytest, ruff check and ruff format --check.
 # Each runs in a clean environment with a timeout and returns its output.
+import shlex
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -39,21 +40,51 @@ class VerificationRunner:
         runner: ProcessRunner | None = None,
         timeout_seconds: int = 300,
         ruff_target: str = "orchestrator",
+        test_command: str | None = None,
+        lint_command: str | None = None,
+        project_subdir: str | None = None,
     ) -> None:
         self.runner = runner or SubprocessRunner(strip_env=check_strip_env())
         self.timeout_seconds = timeout_seconds
         self.ruff_target = ruff_target
+        self.test_command = test_command
+        self.lint_command = lint_command
+        self.project_subdir = project_subdir
 
     def run_checks(self, worktree: Path) -> list[VerificationCheckResult]:
-        """Run pytest, ruff check and ruff format --check; return one result each."""
-        checks = [
-            ("unit_tests", [sys.executable, "-m", "pytest", "-v"]),
-            ("ruff_check", [sys.executable, "-m", "ruff", "check", self.ruff_target]),
-            (
-                "ruff_format",
-                [sys.executable, "-m", "ruff", "format", "--check", self.ruff_target],
-            ),
-        ]
+        """Run the checks and return one result each.
+
+        By default: pytest, ruff check and ruff format --check on the worktree.
+        With a project test_command: that command (and lint_command if set), run
+        inside the project folder of the worktree.
+        """
+        cwd = worktree
+
+        if self.test_command:
+            checks = [("unit_tests", shlex.split(self.test_command))]
+            if self.lint_command:
+                checks.append(("lint", shlex.split(self.lint_command)))
+            if self.project_subdir and (worktree / self.project_subdir).is_dir():
+                cwd = worktree / self.project_subdir
+        else:
+            checks = [
+                ("unit_tests", [sys.executable, "-m", "pytest", "-v"]),
+                (
+                    "ruff_check",
+                    [sys.executable, "-m", "ruff", "check", self.ruff_target],
+                ),
+                (
+                    "ruff_format",
+                    [
+                        sys.executable,
+                        "-m",
+                        "ruff",
+                        "format",
+                        "--check",
+                        self.ruff_target,
+                    ],
+                ),
+            ]
 
         results: list[VerificationCheckResult] = []
 
@@ -61,7 +92,7 @@ class VerificationRunner:
             try:
                 execution = self.runner.run(
                     command,
-                    cwd=worktree,
+                    cwd=cwd,
                     timeout_seconds=self.timeout_seconds,
                 )
                 details = "\n".join(

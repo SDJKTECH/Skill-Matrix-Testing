@@ -88,3 +88,34 @@ def test_verification_runner_uses_current_python_and_ruff_target(tmp_path):
     assert all(command[0] == sys.executable for command in commands)
     assert commands[1][-1] == "src"
     assert commands[2][-2:] == ["--check", "src"]
+
+
+def test_project_commands_run_inside_the_project_folder(tmp_path):
+    project = tmp_path / "projects" / "demo"
+    project.mkdir(parents=True)
+    runner = MagicMock()
+    runner.run.return_value = AgentExecutionResult(0, "ok", "", None)
+    verification_runner = VerificationRunner(
+        runner=runner,
+        test_command="npm test",
+        lint_command="npm run lint",
+        project_subdir="projects/demo",
+    )
+
+    results = verification_runner.run_checks(tmp_path)
+
+    assert [result.check_name for result in results] == ["unit_tests", "lint"]
+    commands = [call.args[0] for call in runner.run.call_args_list]
+    assert commands == [["npm", "test"], ["npm", "run", "lint"]]
+    assert all(call.kwargs["cwd"] == project for call in runner.run.call_args_list)
+
+
+def test_project_test_command_alone_skips_ruff(tmp_path):
+    runner = MagicMock()
+    runner.run.return_value = AgentExecutionResult(0, "ok", "", None)
+    verification_runner = VerificationRunner(runner=runner, test_command="make test")
+
+    results = verification_runner.run_checks(tmp_path)
+
+    assert [result.check_name for result in results] == ["unit_tests"]
+    assert runner.run.call_args.kwargs["cwd"] == tmp_path

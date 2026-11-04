@@ -61,3 +61,17 @@ def test_secrets_cannot_live_in_project_config(tmp_path: Path) -> None:
 def test_project_path_outside_repo_is_rejected(tmp_path: Path) -> None:
     with pytest.raises(ValidationError):
         Settings(_env_file=None, repository_path=tmp_path, project="../..")
+
+
+def test_project_config_accepts_docs_and_command_keys(tmp_path: Path) -> None:
+    make_project(
+        tmp_path,
+        "demo",
+        'docs_dir = "docs"\ntest_command = "npm test"\nlint_command = "npm run lint"\n',
+    )
+
+    settings = Settings(_env_file=None, repository_path=tmp_path, project="demo")
+
+    assert settings.docs_dir == "docs"
+    assert settings.test_command == "npm test"
+    assert settings.lint_command == "npm run lint"

@@ -5,3 +5,11 @@
 github_repo = "SDJKTECH/Skill-Matrix-Testing"
 base_branch = "development"
 # jira_project = "SKILL"
+
+# Feature docs live here (see CLAUDE.md, section "Docs").
+docs_dir = "docs"
+# The project has no automated test or lint command yet, so none is set. Until one
+# is, the verification gate falls back to the orchestrator's own checks, which do not
+# test this project. Add test_command / lint_command here once they exist.
+# test_command = ""
+# lint_command = ""

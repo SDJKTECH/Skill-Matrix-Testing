@@ -20,6 +20,9 @@ ALLOWED_KEYS: dict[str, str] = {
     "jira_code_root": "jira_code_root",
     "jira_tests_root": "jira_tests_root",
     "verification_ruff_target": "verification_ruff_target",
+    "docs_dir": "docs_dir",
+    "test_command": "test_command",
+    "lint_command": "lint_command",
 }
 
 

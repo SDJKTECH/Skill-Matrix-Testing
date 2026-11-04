@@ -70,6 +70,12 @@ class Settings(BaseSettings):
 
     # Verification gate
     verification_ruff_target: str = "orchestrator"
+    # Per-project checks (set in the project's orchestrator.config.toml). When
+    # test_command is set the gate runs it (and lint_command, if set) inside the
+    # project folder instead of the orchestrator's own pytest and ruff.
+    docs_dir: str | None = None
+    test_command: str | None = None
+    lint_command: str | None = None
 
     # GitHub issue intake
     issue_source: Literal["gh", "file", "project", "jira"] = "gh"

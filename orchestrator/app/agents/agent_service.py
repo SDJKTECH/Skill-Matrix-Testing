@@ -73,6 +73,9 @@ class AgentService:
         self.verification_runner = verification_runner or VerificationRunner(
             timeout_seconds=self.settings.verification_timeout_seconds,
             ruff_target=self.settings.verification_ruff_target,
+            test_command=getattr(self.settings, "test_command", None),
+            lint_command=getattr(self.settings, "lint_command", None),
+            project_subdir=getattr(self.settings, "project_subdir", None),
         )
 
     def run_task(
