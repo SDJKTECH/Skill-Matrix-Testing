@@ -309,3 +309,19 @@ def test_the_routes_serve_the_page_and_relay_messages(tmp_path: Path) -> None:
     assert page.status_code == 200 and "Jira Publisher" in page.text
     assert reply.json()["reply"] == "reply" and reply.json()["session_id"]
     assert empty.status_code == 422
+
+
+def test_the_publisher_is_its_own_app_apart_from_the_orchestrator() -> None:
+    from orchestrator.app.main import app as orchestrator
+    from orchestrator.app.publisher.app import app as publisher_app
+
+    publisher = TestClient(publisher_app)
+    main = TestClient(orchestrator)
+
+    assert publisher.get("/publisher").status_code == 200
+    assert publisher.get("/", follow_redirects=False).status_code == 307
+    assert publisher.get("/dashboard").status_code == 404
+    assert publisher.get("/tasks").status_code == 404
+    assert main.get("/publisher").status_code == 404
+    assert "/publisher/message" not in orchestrator.openapi()["paths"]
+    assert "/publisher/message" in publisher_app.openapi()["paths"]
