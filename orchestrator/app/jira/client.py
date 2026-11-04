@@ -28,6 +28,9 @@ SEARCH_FIELDS = [
     "subtasks",
 ]
 
+# What is read of a Story, its Epic and their children when a Story run starts.
+STORY_FIELDS = [*SEARCH_FIELDS, "priority"]
+
 # Jira rejects a summary longer than this.
 MAX_SUMMARY_CHARS = 255
 
@@ -148,19 +151,21 @@ class JiraApi:
 
         return json.loads(payload) if payload else None
 
-    def search(self, jql: str, limit: int = 50) -> list[dict]:
+    def search(
+        self, jql: str, limit: int = 50, fields: list[str] | None = None
+    ) -> list[dict]:
         """Issues matching `jql`, oldest first as the query orders them."""
         result = self.request(
             "POST",
             "/search/jql",
-            {"jql": jql, "fields": SEARCH_FIELDS, "maxResults": limit},
+            {"jql": jql, "fields": fields or SEARCH_FIELDS, "maxResults": limit},
         )
         issues = result.get("issues") if isinstance(result, dict) else None
         return issues if isinstance(issues, list) else []
 
-    def issue(self, key: str) -> dict | None:
+    def issue(self, key: str, fields: str = ISSUE_FIELDS) -> dict | None:
         """One issue with the fields needed to read its type, parent and text."""
-        found = self.request("GET", f"/issue/{key}?fields={ISSUE_FIELDS}")
+        found = self.request("GET", f"/issue/{key}?fields={fields}")
         return found if isinstance(found, dict) and found.get("key") else None
 
     def issue_type_names(self) -> set[str]:
