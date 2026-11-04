@@ -1,15 +1,19 @@
 # Runs the Jira Publisher agent for the chat page. One page session = one Claude Code
-# conversation (resumed on every message) plus a folder that holds the confirmation.
-# The server, not the agent, records "confirm": the agent's create command refuses to
-# run without it, and any other message clears it, so a changed proposal needs a
-# new one.
+# conversation (resumed on every message).
+#
+# The agent searches and proposes; it never writes to Jira. Its proposal ends with a
+# machine-readable plan block, which the server checks and keeps. Only when the user's
+# message is exactly "confirm" does the server create that plan, through the guarded
+# JiraPublisher. Any other message replaces the proposal, so a changed proposal always
+# needs a new "confirm".
+import json
 import logging
 import os
 import re
 import sys
-import tempfile
 import threading
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,8 +26,14 @@ from orchestrator.app.agents.agent_runner import (
 from orchestrator.app.agents.model_router import ModelRouter
 from orchestrator.app.core.config import Settings
 from orchestrator.app.core.exceptions import OrchestratorError
+from orchestrator.app.jira.client import make_jira_api
 from orchestrator.app.planning.planner import result_text
-from orchestrator.app.publisher.cli import CONFIRMED
+from orchestrator.app.publisher.guard import (
+    JiraPublisher,
+    PublishResult,
+    StoryDraft,
+    parse_plan,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +41,20 @@ PUBLISHER_TIMEOUT_SECONDS = 900
 MAX_MESSAGE_CHARS = 20000
 CLI_PREFIX = "python -m orchestrator.app.publisher.cli"
 ALLOWED_TOOLS = [f"Bash({CLI_PREFIX}:*)"]
+_PLAN_BLOCK = re.compile(r"```plan\s*(\{.*?\})\s*```", re.DOTALL)
 
 
 class PublisherError(OrchestratorError):
     """The publisher chat could not answer."""
+
+
+@dataclass(frozen=True)
+class Reply:
+    """What the page shows: the text, and whether a plan is waiting for confirm."""
+
+    session_id: str
+    text: str
+    can_confirm: bool
 
 
 class VenvRunner(SubprocessRunner):
@@ -51,22 +71,75 @@ class VenvRunner(SubprocessRunner):
 
 @dataclass
 class ChatSession:
-    folder: Path
     claude_session: str | None = None
+    plan: list[StoryDraft] | None = None
+    # What happened outside the agent (the creation), told to it on the next turn.
+    note: str = ""
+
+
+def count_line(drafts: list[StoryDraft]) -> str:
+    """e.g. '3 Stories, 15 Subtasks', counted from the plan itself."""
+    subtasks = sum(len(draft.subtasks) for draft in drafts)
+    return f"{len(drafts)} Stories, {subtasks} Subtasks"
+
+
+def extract_plan(
+    text: str, project: str = "SMT"
+) -> tuple[str, list[StoryDraft] | None, str | None]:
+    """Split a reply into (text to show, validated plan or None, problem or None)."""
+    matches = _PLAN_BLOCK.findall(text)
+    shown = _PLAN_BLOCK.sub("", text).strip()
+
+    if not matches:
+        return shown, None, None
+
+    try:
+        return shown, parse_plan(json.loads(matches[-1]), project), None
+    except (json.JSONDecodeError, OrchestratorError) as exc:
+        return shown, None, str(exc)
+
+
+def report(result: PublishResult) -> str:
+    """The outcome of creating a plan, in plain text."""
+    lines = [
+        f"  {item.issue_type} {item.key} (under {item.parent})  {item.summary}"
+        for item in result.created
+    ]
+
+    if result.ok:
+        return (
+            "Created and verified in Jira. Every Story is under its Epic and every "
+            "Subtask is under its Story.\n" + "\n".join(lines)
+        )
+
+    head = "Not everything was created or verified."
+    if result.failed:
+        head += f"\nStopped at {result.failed}: {result.error}"
+    for problem in result.problems:
+        head += f"\n- {problem}"
+    made = "\n".join(lines) or "  (nothing was created)"
+    return f"{head}\nWhat exists in Jira now:\n{made}"
 
 
 class PublisherChat:
     """Keeps the page sessions and talks to the jira-publisher agent."""
 
-    def __init__(self, settings: Settings, runner: ProcessRunner | None = None) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        runner: ProcessRunner | None = None,
+        publisher_factory: Callable[[], JiraPublisher] | None = None,
+    ) -> None:
         self.settings = settings
         self.runner = runner or VenvRunner()
-        self.root = Path(tempfile.gettempdir()) / "jira-publisher"
+        self.publisher_factory = publisher_factory or (
+            lambda: JiraPublisher(make_jira_api(settings), settings)
+        )
         self.sessions: dict[str, ChatSession] = {}
         self._lock = threading.Lock()
 
-    def send(self, session_id: str | None, message: str) -> tuple[str, str]:
-        """Pass the user's message to the agent; return (session id, its reply)."""
+    def send(self, session_id: str | None, message: str) -> Reply:
+        """Handle one user message; return what to show."""
         message = message.strip()
 
         if not message:
@@ -78,25 +151,48 @@ class PublisherChat:
             )
 
         session_id, session = self._session(session_id)
-        marker = session.folder / CONFIRMED
-        marker.unlink(missing_ok=True)  # Any message withdraws an earlier confirm.
 
         if re.fullmatch(r"confirm\.?", message, re.IGNORECASE):
-            if session.claude_session is None:
-                raise PublisherError("There is no proposal to confirm yet.")
-            marker.write_text("confirmed\n", encoding="utf-8")
-            prompt = (
-                f"SESSION={session.folder}\nThe user replied: confirm. Their "
-                "confirmation is recorded for the proposal you last showed. Create "
-                "it now with the create command, unchanged."
-            )
-        else:
-            prompt = f"SESSION={session.folder}\n{message}"
+            return self._create(session_id, session)
 
-        reply = self._ask(session, prompt)
-        # A confirmation the agent did not use must not carry over to a later turn.
-        marker.unlink(missing_ok=True)
-        return session_id, reply
+        session.plan = None  # Any other message withdraws the proposal.
+        prompt = f"{session.note}\n\n{message}" if session.note else message
+        session.note = ""
+        shown, plan, problem = extract_plan(
+            self._ask(session, prompt), self.settings.publisher_project
+        )
+        session.plan = plan
+
+        if plan is not None:
+            shown += (
+                f"\n\nReady to create: {count_line(plan)}. Press Confirm to create "
+                "them in Jira, or tell me what to change."
+            )
+        elif problem:
+            shown += (
+                f"\n\n(The plan could not be used: {problem} Ask me to restate the "
+                "proposal.)"
+            )
+
+        return Reply(session_id, shown, plan is not None)
+
+    def _create(self, session_id: str, session: ChatSession) -> Reply:
+        plan, session.plan = session.plan, None  # One confirmation, one attempt.
+
+        if plan is None:
+            raise PublisherError("There is no proposal to confirm yet.")
+
+        try:
+            result = self.publisher_factory().publish(plan)
+        except OrchestratorError as exc:
+            raise PublisherError(f"Nothing was created: {exc}") from exc
+
+        text = report(result)
+        session.note = (
+            f"[System: the user confirmed and the system created it.]\n{text}"
+        )
+        logger.info("Publisher created: ok=%s items=%s", result.ok, len(result.created))
+        return Reply(session_id, text, False)
 
     def _session(self, session_id: str | None) -> tuple[str, ChatSession]:
         with self._lock:
@@ -104,9 +200,7 @@ class PublisherChat:
                 return session_id, self.sessions[session_id]
 
             new_id = uuid.uuid4().hex
-            folder = self.root / new_id
-            folder.mkdir(parents=True, exist_ok=True)
-            self.sessions[new_id] = ChatSession(folder)
+            self.sessions[new_id] = ChatSession()
             return new_id, self.sessions[new_id]
 
     def _ask(self, session: ChatSession, prompt: str) -> str:
@@ -149,16 +243,12 @@ class PublisherChat:
 
 def _session_id(stdout: str) -> str | None:
     """The Claude conversation id from the agent's JSON output."""
-    import json
-
     try:
         payload = json.loads(stdout)
     except (json.JSONDecodeError, TypeError):
         return None
 
     value = payload.get("session_id") if isinstance(payload, dict) else None
-    return (
-        value
-        if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9-]+", value)
-        else None
-    )
+    if isinstance(value, str) and re.fullmatch(r"[A-Za-z0-9-]+", value):
+        return value
+    return None

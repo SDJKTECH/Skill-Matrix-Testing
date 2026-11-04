@@ -24,6 +24,7 @@ class MessageRequest(BaseModel):
 class MessageResponse(BaseModel):
     session_id: str
     reply: str
+    can_confirm: bool = False
 
 
 @lru_cache(maxsize=1)
@@ -44,8 +45,12 @@ def publisher_message(
 ) -> MessageResponse:
     """Give the agent the user's message and return its reply."""
     try:
-        session_id, reply = chat.send(request.session_id, request.message)
+        reply = chat.send(request.session_id, request.message)
     except OrchestratorError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
-    return MessageResponse(session_id=session_id, reply=reply)
+    return MessageResponse(
+        session_id=reply.session_id,
+        reply=reply.text,
+        can_confirm=reply.can_confirm,
+    )

@@ -191,112 +191,154 @@ def test_epics_and_search_stay_inside_the_project() -> None:
 # ----- the command the agent runs -----
 
 
-def test_create_refuses_without_the_servers_confirmation(
-    tmp_path: Path, monkeypatch, capsys
-) -> None:
+def test_the_agent_command_can_only_read(monkeypatch, capsys) -> None:
     pub, api = publisher()
     monkeypatch.setattr(cli, "make_jira_api", lambda settings: api)
 
-    code = cli.run(["create", "--session", str(tmp_path)], json.dumps(PLAN))
+    assert cli.run(["epics"]) == 0
+    assert cli.run(["search", "--text", "quiz"]) == 0
+    with pytest.raises(SystemExit):
+        cli.run(["create", "--session", "x"])
 
-    assert code == 2 and api.created == []
-    assert "Not confirmed" in capsys.readouterr().out
-
-
-def test_create_works_once_per_confirmation(
-    tmp_path: Path, monkeypatch, capsys
-) -> None:
-    pub, api = publisher()
-    monkeypatch.setattr(cli, "make_jira_api", lambda settings: api)
-    (tmp_path / cli.CONFIRMED).write_text("x", encoding="utf-8")
-
-    assert cli.run(["create", "--session", str(tmp_path)], json.dumps(PLAN)) == 0
-    out = json.loads(capsys.readouterr().out)
-    assert out["ok"] is True and len(out["created"]) == 3
-
-    assert cli.run(["create", "--session", str(tmp_path)], json.dumps(PLAN)) == 2
-    assert len(api.created) == 3
-
-
-def test_a_bad_plan_does_not_use_up_the_confirmation(
-    tmp_path: Path, monkeypatch, capsys
-) -> None:
-    pub, api = publisher()
-    monkeypatch.setattr(cli, "make_jira_api", lambda settings: api)
-    (tmp_path / cli.CONFIRMED).write_text("x", encoding="utf-8")
-
-    assert cli.run(["create", "--session", str(tmp_path)], "{}") == 1
-
-    assert (tmp_path / cli.CONFIRMED).exists() and api.created == []
+    assert api.created == []
+    assert not hasattr(cli, "consume_confirmation")
     capsys.readouterr()
 
 
 # ----- the chat service and routes -----
 
+PLAN_BLOCK = "```plan\n" + json.dumps(PLAN) + "\n```"
+
 
 class FakeRunner:
-    def __init__(self, session_id="abc-123", code=0):
-        self.session_id, self.code, self.calls = session_id, code, []
+    def __init__(self, reply="reply", session_id="abc-123", code=0):
+        self.reply, self.session_id, self.code = reply, session_id, code
+        self.calls = []
 
     def run(self, command, *, cwd, timeout_seconds, task_id=None):
         self.calls.append((command, cwd))
-        out = json.dumps({"result": "reply", "session_id": self.session_id})
+        out = json.dumps({"result": self.reply, "session_id": self.session_id})
         return AgentExecutionResult(self.code, out, "boom", None)
 
 
-def chat(tmp_path: Path, runner: FakeRunner) -> PublisherChat:
-    service = PublisherChat(Settings(_env_file=None, repository_path=tmp_path), runner)
-    service.root = tmp_path / "sessions"
-    return service
+def chat(tmp_path: Path, runner: FakeRunner, api: FakeApi | None = None):
+    api = api or FakeApi()
+    settings = Settings(_env_file=None, repository_path=tmp_path)
+    service = PublisherChat(
+        settings, runner, publisher_factory=lambda: JiraPublisher(api, settings)
+    )
+    return service, api
 
 
-def test_the_agent_gets_one_restricted_tool_and_is_resumed(tmp_path: Path) -> None:
+def test_the_agent_gets_one_read_only_tool_and_is_resumed(tmp_path: Path) -> None:
     runner = FakeRunner()
-    service = chat(tmp_path, runner)
+    service, _ = chat(tmp_path, runner)
 
-    session, reply = service.send(None, "As an employee I want quizzes")
-    service.send(session, "add a QA subtask")
+    first = service.send(None, "As an employee I want quizzes")
+    service.send(first.session_id, "add a QA subtask")
 
-    first, second = (call[0] for call in runner.calls)
-    assert reply == "reply" and first[first.index("--agent") + 1] == "jira-publisher"
-    assert "--resume" not in first
-    assert second[second.index("--resume") + 1] == "abc-123"
-    tools = first[first.index("--allowedTools") + 1]
-    assert tools == "Bash(python -m orchestrator.app.publisher.cli:*)"
-    assert "SESSION=" in first[-1] and "quizzes" in first[-1]
+    one, two = (call[0] for call in runner.calls)
+    assert first.text == "reply" and not first.can_confirm
+    assert one[one.index("--agent") + 1] == "jira-publisher"
+    assert "--resume" not in one
+    assert two[two.index("--resume") + 1] == "abc-123"
+    assert one[one.index("--allowedTools") + 1] == (
+        "Bash(python -m orchestrator.app.publisher.cli:*)"
+    )
+    assert one[-1] == "As an employee I want quizzes"
 
 
-def test_confirm_is_recorded_by_the_server_and_withdrawn_by_any_other_message(
+def test_a_proposal_is_held_with_its_counts_and_the_block_is_hidden(
     tmp_path: Path,
 ) -> None:
-    runner = FakeRunner()
-    service = chat(tmp_path, runner)
-    session, _ = service.send(None, "a requirement")
-    marker = service.sessions[session].folder / cli.CONFIRMED
+    service, api = chat(tmp_path, FakeRunner(f"The tree.\n{PLAN_BLOCK}"))
 
-    seen = []
-    original = runner.run
-    runner.run = lambda *a, **k: (seen.append(marker.exists()), original(*a, **k))[1]
+    reply = service.send(None, "need quizzes")
 
-    service.send(session, "Confirm")
-    service.send(session, "actually change it")
-
-    assert seen == [True, False]
-    assert not marker.exists()
+    assert reply.can_confirm and api.created == []
+    assert "```" not in reply.text and "The tree." in reply.text
+    assert "1 Stories, 2 Subtasks" in reply.text
 
 
-def test_confirm_with_no_proposal_is_refused(tmp_path: Path) -> None:
+def test_confirm_creates_exactly_the_held_plan_once(tmp_path: Path) -> None:
+    service, api = chat(tmp_path, FakeRunner(PLAN_BLOCK))
+    session = service.send(None, "need quizzes").session_id
+
+    done = service.send(session, "Confirm")
+
+    assert [c[1] for c in api.created] == ["Story", "Subtask", "Subtask"]
+    assert "Created and verified" in done.text and not done.can_confirm
     with pytest.raises(Exception, match="no proposal"):
-        chat(tmp_path, FakeRunner()).send(None, "confirm")
+        service.send(session, "confirm")
+    assert len(api.created) == 3
+
+
+def test_any_other_message_withdraws_the_proposal(tmp_path: Path) -> None:
+    runner = FakeRunner(PLAN_BLOCK)
+    service, api = chat(tmp_path, runner)
+    session = service.send(None, "need quizzes").session_id
+
+    runner.reply = "Which Epic do you want?"
+    reply = service.send(session, "actually, another idea")
+
+    assert not reply.can_confirm
+    with pytest.raises(Exception, match="no proposal"):
+        service.send(session, "confirm")
+    assert api.created == []
+
+
+def test_the_agent_is_told_what_the_system_created(tmp_path: Path) -> None:
+    runner = FakeRunner(PLAN_BLOCK)
+    service, _ = chat(tmp_path, runner)
+    session = service.send(None, "need quizzes").session_id
+    service.send(session, "confirm")
+
+    service.send(session, "thanks")
+
+    assert "the system created it" in runner.calls[-1][0][-1]
+    assert "SMT-11" in runner.calls[-1][0][-1]
+
+
+def test_a_failure_during_creation_is_reported_with_what_exists(
+    tmp_path: Path,
+) -> None:
+    service, api = chat(tmp_path, FakeRunner(PLAN_BLOCK), FakeApi(fail_on="Quiz API"))
+    session = service.send(None, "need quizzes").session_id
+
+    done = service.send(session, "confirm")
+
+    assert "Stopped at Subtask 'Quiz API'" in done.text and "Jira said no" in done.text
+    assert "Story SMT-11" in done.text
+
+
+def test_an_unusable_plan_block_cannot_be_confirmed(tmp_path: Path) -> None:
+    bad = json.dumps({"stories": [{"epic": "OTH-1", "summary": "x"}]})
+    service, api = chat(tmp_path, FakeRunner(f"tree\n```plan\n{bad}\n```"))
+
+    reply = service.send(None, "need quizzes")
+
+    assert not reply.can_confirm and "could not be used" in reply.text
+    with pytest.raises(Exception, match="no proposal"):
+        service.send(reply.session_id, "confirm")
+    assert api.created == []
+
+
+def test_confirm_before_any_proposal_is_refused(tmp_path: Path) -> None:
+    service, _ = chat(tmp_path, FakeRunner())
+
+    with pytest.raises(Exception, match="no proposal"):
+        service.send(None, "confirm")
 
 
 def test_an_agent_failure_is_reported(tmp_path: Path) -> None:
+    service, _ = chat(tmp_path, FakeRunner(code=1))
+
     with pytest.raises(Exception, match="publisher failed"):
-        chat(tmp_path, FakeRunner(code=1)).send(None, "hello")
+        service.send(None, "hello")
 
 
 def test_the_routes_serve_the_page_and_relay_messages(tmp_path: Path) -> None:
-    service = chat(tmp_path, FakeRunner())
+    service, _ = chat(tmp_path, FakeRunner(PLAN_BLOCK))
     app = FastAPI()
     app.include_router(publisher_router)
     app.dependency_overrides[get_publisher_chat] = lambda: service
@@ -305,10 +347,15 @@ def test_the_routes_serve_the_page_and_relay_messages(tmp_path: Path) -> None:
     page = client.get("/publisher")
     reply = client.post("/publisher/message", json={"message": "need quizzes"})
     empty = client.post("/publisher/message", json={"message": "  "})
+    done = client.post(
+        "/publisher/message",
+        json={"message": "confirm", "session_id": reply.json()["session_id"]},
+    )
 
     assert page.status_code == 200 and "Jira Publisher" in page.text
-    assert reply.json()["reply"] == "reply" and reply.json()["session_id"]
+    assert reply.json()["can_confirm"] is True
     assert empty.status_code == 422
+    assert done.json()["can_confirm"] is False and "Created" in done.json()["reply"]
 
 
 def test_the_publisher_is_its_own_app_apart_from_the_orchestrator() -> None:

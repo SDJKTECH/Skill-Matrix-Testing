@@ -84,6 +84,7 @@ const confirmButton = document.getElementById("confirm");
 const status = document.getElementById("status");
 let sessionId = null;   // a page reload starts a new session
 let busy = false;
+let canConfirm = false;   // the server holds a proposal waiting for Confirm
 
 function add(kind, who, body) {
   document.getElementById("empty")?.remove();
@@ -100,7 +101,7 @@ function add(kind, who, body) {
 function setBusy(on, message) {
   busy = on;
   sendButton.disabled = on;
-  confirmButton.disabled = on || !sessionId;
+  confirmButton.disabled = on || !canConfirm;
   status.replaceChildren();
   if (on) {
     const icon = document.createElement("span");
@@ -123,9 +124,11 @@ async function talk(message) {
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.detail || `HTTP ${response.status}`);
     sessionId = body.session_id;
+    canConfirm = Boolean(body.can_confirm);
     add("agent", "Publisher", body.reply);
   } catch (error) {
     add("err", "Error", String(error.message || error));
+    canConfirm = false;
   }
   setBusy(false);
   text.focus();
@@ -151,6 +154,7 @@ confirmButton.addEventListener("click", () => talk("confirm"));
 document.getElementById("new").addEventListener("click", () => {
   if (busy) return;
   sessionId = null;
+  canConfirm = false;
   log.replaceChildren();
   const empty = document.createElement("div");
   empty.className = "empty";
