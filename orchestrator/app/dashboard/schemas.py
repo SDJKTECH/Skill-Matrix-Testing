@@ -112,6 +112,45 @@ class ActivityEvent(BaseModel):
     text: str
 
 
+class StoryTaskView(BaseModel):
+    """One sub-task of a story run, as the Stories view lists it."""
+
+    task_id: int
+    jira_key: str | None = None
+    title: str
+    status: TaskStatus
+    current_stage: str | None = None
+    depends_on: list[str] = []
+    complexity: str | None = None
+    parallel_safe: bool = True
+    merged: bool = False
+    cost_usd: float = 0.0
+    active_role: str | None = None
+    jira_url: str | None = None
+
+
+class DashboardStory(BaseModel):
+    """One story run: where it is, its sub-tasks, cost and pull request."""
+
+    run_id: int
+    story_key: str
+    summary: str | None = None
+    jira_url: str | None = None
+    status: str
+    # A short sentence on what is happening now.
+    phase: str
+    doc_target: str | None = None
+    created_at: datetime
+    finished_at: datetime | None = None
+    pull_request_url: str | None = None
+    branch: str | None = None
+    concerns: list[str] = []
+    tasks: list[StoryTaskView] = []
+    done: int = 0
+    total: int = 0
+    cost_usd: float = 0.0
+
+
 class DashboardTask(BaseModel):
     """Everything the dashboard shows about one task."""
 
@@ -190,3 +229,5 @@ class DashboardOverview(BaseModel):
     work_items: list[WorkItem] = []
     # Newest first.
     activity: list[ActivityEvent] = []
+    # Story runs, newest first.
+    stories: list[DashboardStory] = []

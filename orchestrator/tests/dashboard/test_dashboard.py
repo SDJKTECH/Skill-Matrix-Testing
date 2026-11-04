@@ -10,6 +10,7 @@ from orchestrator.app.db.models import (
     AgentRun,
     Milestone,
     Project,
+    StoryRun,
     Task,
     TaskStatus,
     VerificationResult,
@@ -722,3 +723,86 @@ def test_dashboard_page_hides_stale_attention_items() -> None:
     assert "parseTime(item.task.created_at) >= cutoff" in source
     # A null child would be printed as the text "null" by replaceChildren.
     assert ": null)" not in _function_body(source, "renderAttention")
+
+
+def story_run(routes_client, seeded, status="running", merged=0, task_statuses=()):
+    """A story run with sub-tasks; the first `merged` are in the story branch."""
+    with routes_client.session_factory() as session:
+        session.add(
+            JiraItem(
+                key="SMT-9",
+                project_id=1,
+                type="Story",
+                summary="Export report",
+                branch_name="agent/story-smt-9",
+            )
+        )
+        run = StoryRun(story_key="SMT-9", status=status, doc_target="docs/x.md")
+        session.add(run)
+        session.commit()
+        run_id = run.id
+
+    ids = []
+    for index, task_status in enumerate(task_statuses):
+        ids.append(
+            seeded(
+                task_status,
+                runs=[("builder", "RUNNING", 10)]
+                if task_status == TaskStatus.RUNNING
+                else [],
+                jira_key=f"SMT-{10 + index}",
+                story_run_id=run_id,
+                complexity="small",
+                story_branch="agent/story-smt-9" if index < merged else None,
+            )
+        )
+    return ids
+
+
+def test_a_story_run_shows_progress_and_what_is_happening(
+    routes_client, seeded
+) -> None:
+    story_run(
+        routes_client,
+        seeded,
+        merged=1,
+        task_statuses=[TaskStatus.COMPLETED, TaskStatus.RUNNING, TaskStatus.BLOCKED],
+    )
+
+    (story,) = overview(routes_client).stories
+
+    assert (story.story_key, story.summary) == ("SMT-9", "Export report")
+    assert (story.done, story.total) == (1, 3)
+    assert story.phase == "Building: 1 of 3 merged, 1 in progress"
+    assert story.tasks[0].merged and not story.tasks[1].merged
+    assert story.tasks[1].active_role == "builder"
+    assert story.tasks[1].cost_usd == 0.5
+    assert story.doc_target == "docs/x.md"
+
+
+@pytest.mark.parametrize(
+    ("status", "statuses", "merged", "text"),
+    [
+        ("planned", [], 0, "waiting for you to start"),
+        ("running", [TaskStatus.COMPLETED], 1, "writing the doc"),
+        ("running", [TaskStatus.FAILED], 0, "failed"),
+        ("documented", [TaskStatus.COMPLETED], 1, "pull request ready"),
+        ("needs_review", [TaskStatus.COMPLETED], 1, "doc needs a person"),
+    ],
+)
+def test_the_story_phase_reads_naturally(
+    routes_client, seeded, status, statuses, merged, text
+) -> None:
+    story_run(
+        routes_client, seeded, status=status, merged=merged, task_statuses=statuses
+    )
+
+    (story,) = overview(routes_client).stories
+
+    assert text in story.phase
+
+
+def test_without_story_runs_the_list_is_empty(routes_client, seeded) -> None:
+    seeded(TaskStatus.QUEUED)
+
+    assert overview(routes_client).stories == []

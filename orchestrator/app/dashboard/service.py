@@ -15,12 +15,14 @@ from orchestrator.app.dashboard.schemas import (
     DashboardOverview,
     DashboardProject,
     DashboardRun,
+    DashboardStory,
     DashboardSummary,
     DashboardTask,
     HierarchyNode,
     RoleUsage,
     RunDetail,
     StageInfo,
+    StoryTaskView,
     TaskActions,
     UsageTotals,
     WorkItem,
@@ -32,6 +34,7 @@ from orchestrator.app.db.models import (
     AgentRun,
     Milestone,
     Project,
+    StoryRun,
     Task,
     TaskStatus,
 )
@@ -51,6 +54,7 @@ STAGE_LABELS = {
 ACTIVE_RUN_STATUSES = ("STARTING", "RUNNING", "PAUSED")
 
 MAX_ACTIVITY_EVENTS = 40
+MAX_STORIES = 20
 # Check results saved within this many seconds belong to one run of the checks.
 CHECK_BATCH_SECONDS = 10
 
@@ -423,6 +427,105 @@ def _task_view(
     )
 
 
+def _story_phase(run: StoryRun, tasks: list[Task], merged: int) -> str:
+    """One sentence on what a story run is doing right now."""
+    live = [t for t in tasks if t.status != TaskStatus.CANCELLED]
+
+    if run.status == "planned":
+        return "Planned - waiting for you to start the run"
+    if run.status == "documented":
+        return "Documented - pull request ready to review"
+    if run.status == "needs_review":
+        return "Built, but the feature doc needs a person"
+    if run.status in ("failed", "cancelled"):
+        return f"Run {run.status}"
+    if any(t.status == TaskStatus.FAILED for t in live):
+        return "A sub-task failed - needs attention"
+    if live and merged == len(live):
+        return "All sub-tasks merged - writing the doc and opening the PR"
+
+    running = [t for t in live if t.status in PAUSABLE_STATUSES]
+    if running:
+        return f"Building: {merged} of {len(live)} merged, {len(running)} in progress"
+
+    return f"Building: {merged} of {len(live)} merged, waiting for the next tasks"
+
+
+def _story_task(task: Task, branch: str | None) -> StoryTaskView:
+    """The compact view of one sub-task of a story run."""
+    session = object_session(task)
+    depends = []
+    for entry in get_blockers(task):
+        blocker = session.get(Task, entry["task_id"]) if session else None
+        depends.append(
+            blocker.jira_key or f"#{blocker.id}" if blocker else str(entry["task_id"])
+        )
+
+    runs = sorted(task.agent_runs, key=lambda run: run.id)
+    active = next(
+        (run.agent_role for run in reversed(runs) if run.status in ACTIVE_RUN_STATUSES),
+        None,
+    )
+    return StoryTaskView(
+        task_id=task.id,
+        jira_key=task.jira_key,
+        title=task.title,
+        status=task.status,
+        current_stage=task.current_stage,
+        depends_on=depends,
+        complexity=task.complexity,
+        parallel_safe=bool(task.parallel_safe),
+        merged=bool(branch and task.story_branch == branch),
+        cost_usd=_usage(runs).cost_usd,
+        active_role=active,
+        jira_url=_jira_url(task.jira_key),
+    )
+
+
+def _stories(session: Session, items: dict[str, JiraItem]) -> list[DashboardStory]:
+    """The latest story runs with their sub-tasks."""
+    stories = []
+
+    for run in session.scalars(
+        select(StoryRun)
+        .options(
+            selectinload(StoryRun.concerns),
+            selectinload(StoryRun.tasks).selectinload(Task.agent_runs),
+        )
+        .order_by(StoryRun.id.desc())
+        .limit(MAX_STORIES)
+    ):
+        item = items.get(run.story_key)
+        branch = item.branch_name if item else None
+        tasks = sorted(run.tasks, key=lambda task: task.id)
+        views = [_story_task(task, branch) for task in tasks]
+        live = [view for view in views if view.status != TaskStatus.CANCELLED]
+        merged = sum(view.merged for view in live)
+
+        stories.append(
+            DashboardStory(
+                run_id=run.id,
+                story_key=run.story_key,
+                summary=item.summary if item else None,
+                jira_url=_jira_url(run.story_key),
+                status=run.status,
+                phase=_story_phase(run, tasks, merged),
+                doc_target=run.doc_target,
+                created_at=run.created_at,
+                finished_at=run.finished_at,
+                pull_request_url=item.pull_request_url if item else None,
+                branch=branch,
+                concerns=[concern.text for concern in run.concerns],
+                tasks=views,
+                done=merged,
+                total=len(live),
+                cost_usd=sum(view.cost_usd for view in views),
+            )
+        )
+
+    return stories
+
+
 def _projects(session: Session) -> list[DashboardProject]:
     """Totals per project, over every task (not only the listed ones)."""
     active_statuses = PAUSABLE_STATUSES | {TaskStatus.PAUSED}
@@ -546,4 +649,5 @@ def build_overview(
             items, {task.jira_key: task.id for task in tasks if task.jira_key}
         ),
         activity=_activity(tasks),
+        stories=_stories(session, items),
     )

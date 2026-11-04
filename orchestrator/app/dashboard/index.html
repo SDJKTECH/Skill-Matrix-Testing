@@ -1,5 +1,6 @@
 <!doctype html>
 <!-- Live monitoring dashboard: a single page that polls /dashboard/overview.
+     Stories view: each story run with its phase, sub-tasks, cost and pull request.
      Work view: the Jira Epic > Story > Subtask tree with rolled-up progress and cost.
      Also: what needs a person (PRs to merge, failures), recent activity, per-task stages,
      cost, milestones and the pause/resume/cancel controls. -->
@@ -467,6 +468,35 @@
   .att-older { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 8px; }
   .att-older button { font-size: 12px; padding: 2px 10px; }
   .attention.calm .att-list { margin-top: 8px; }
+
+  /* Stories view: one card per story run, with its sub-tasks and live phase. */
+  .stories { display: grid; gap: 14px; margin-bottom: 16px; }
+  .story { background: var(--surface); border: 1px solid var(--ring); border-radius: 10px; padding: 12px 14px; }
+  .story.is-live { border-color: var(--accent); }
+  .story.is-bad { border-color: var(--critical); }
+  .story-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px; }
+  .story-head .skey { font-weight: 700; }
+  .story-head .stitle { flex: 1 1 200px; min-width: 0; font-weight: 600; }
+  .phase { margin: 4px 0 8px; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
+  .chip { font-size: 12px; border: 1px solid var(--line-strong); border-radius: 999px; padding: 1px 9px; color: var(--ink-2); }
+  .chip.good { border-color: var(--good); color: var(--good-text); }
+  .chip.bad { border-color: var(--critical); color: var(--critical); }
+  .chip.live { border-color: var(--accent); color: var(--accent); }
+  .sbar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin: 6px 0 10px; }
+  .sbar > span { display: block; height: 100%; background: var(--good); transition: width .4s; }
+  .sflow { display: flex; flex-wrap: wrap; gap: 4px 6px; margin: 0 0 10px; font-size: 12px; color: var(--ink-3); }
+  .sflow .step-s { padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); }
+  .sflow .step-s.done { color: var(--good-text); border-color: var(--good); }
+  .sflow .step-s.now { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .strow {
+    display: grid; grid-template-columns: minmax(70px, auto) minmax(160px, 3fr) minmax(110px, 1fr) minmax(90px, 1fr) 70px;
+    gap: 4px 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); font-size: 13px; cursor: pointer;
+  }
+  .strow:hover { background: color-mix(in srgb, var(--line) 40%, transparent); }
+  .strow .num { color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: right; }
+  .strow .meta { color: var(--ink-2); font-size: 12px; }
+  .snotes { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 12px; }
+  .sfoot { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: var(--ink-2); font-size: 12px; }
 </style>
 </head>
 <body>
@@ -478,6 +508,7 @@
       <span class="live meta" aria-live="polite"><span class="dot paused" id="live-dot"></span><span id="live-text">Connecting…</span></span>
       <input type="search" id="search" placeholder="Search tasks (press /)" aria-label="Search tasks">
       <span class="seg" role="group" aria-label="View">
+        <button id="view-stories" type="button" aria-pressed="false" title="Story runs and their sub-tasks (key 4)">Stories</button>
         <button id="view-work" type="button" aria-pressed="false" title="Epic, Story and Subtask tree (key 1)">Work</button>
         <button id="view-cards" type="button" aria-pressed="true" title="One card per task (key 2)">Cards</button>
         <button id="view-board" type="button" aria-pressed="false" title="Lanes by status (key 3)">Board</button>
@@ -496,7 +527,7 @@
 
   <section class="panel" id="live-panel" aria-label="Agents working now" hidden></section>
 
-  <div class="filters">
+  <div class="filters" id="filters-row">
     <label for="project-filter">Project</label>
     <select id="project-filter"><option value="">All projects</option></select>
     <label for="filter">Show</label>
@@ -511,6 +542,7 @@
     <span class="count" id="count"></span>
   </div>
 
+  <section id="stories" class="stories" aria-label="Story runs" hidden></section>
   <section id="tasks" aria-label="Tasks"></section>
   <section id="board" class="board" aria-label="Task board" hidden></section>
   <section id="work" class="wtree" aria-label="Work breakdown by Epic and Story" hidden></section>
@@ -526,7 +558,7 @@
   </div>
 
   <p class="hint shortcuts">
-    <kbd>1</kbd> Work <kbd>2</kbd> Cards <kbd>3</kbd> Board <kbd>/</kbd> Search <kbd>Esc</kbd> Close
+    <kbd>1</kbd> Work <kbd>2</kbd> Cards <kbd>3</kbd> Board <kbd>4</kbd> Stories <kbd>/</kbd> Search <kbd>Esc</kbd> Close
   </p>
 </main>
 <div id="backdrop"></div>
@@ -912,13 +944,17 @@ function render() {
   const container = document.getElementById("tasks");
   const board = document.getElementById("board");
   const work = document.getElementById("work");
+  const stories = document.getElementById("stories");
+  stories.hidden = state.view !== "stories";
+  document.getElementById("filters-row").hidden = state.view === "stories";
   container.hidden = state.view !== "cards";
   board.hidden = state.view !== "board";
   work.hidden = state.view !== "work";
 
   renderAttention(data);
   renderActivity(data);
-  if (state.view === "board") renderBoard(visible);
+  if (state.view === "stories") renderStories(data);
+  else if (state.view === "board") renderBoard(visible);
   else if (state.view === "work") renderWork(data, visible);
   else renderCards(container, visible, data);
 
@@ -1026,7 +1062,7 @@ function cycleTheme() {
 function setView(view, remember = true) {
   state.view = view;
   if (remember) { store("view", view); state.viewChosen = true; }
-  for (const name of ["work", "cards", "board"]) {
+  for (const name of ["stories", "work", "cards", "board"]) {
     document.getElementById(`view-${name}`).setAttribute("aria-pressed", String(view === name));
   }
   render();
@@ -1622,6 +1658,84 @@ function workRow(node, depth, show) {
   }, name, middle, stats, actions);
 }
 
+const STORY_STEPS = ["Planned", "Building", "Documenting", "PR ready"];
+
+function storyStep(story) {
+  if (story.pull_request_url || story.status === "documented" || story.status === "needs_review") return 3;
+  if (story.status === "planned") return 0;
+  if (story.total && story.done === story.total) return 2;
+  return 1;
+}
+
+function storyTone(story) {
+  if (story.status === "failed" || story.status === "needs_review" || story.tasks.some((t) => t.status === "failed")) return "bad";
+  if (story.status === "documented") return "good";
+  return story.status === "running" ? "live" : "";
+}
+
+function storyRow(task) {
+  const [icon, label] = STATUS_TEXT[task.status] || ["?", task.status];
+  const spin = ACTIVE.has(task.status) && task.status !== "paused" ? " spin" : "";
+  const waiting = task.depends_on.length ? `waits for ${task.depends_on.join(", ")}` : (task.parallel_safe ? "independent" : "ordered");
+  const where = task.merged ? "merged into story branch"
+    : task.active_role ? `${task.active_role} working`
+    : task.current_stage ? task.current_stage : waiting;
+  return el("div", { class: "strow", role: "button", tabindex: "0",
+    onclick: () => openDrawer(task.task_id),
+    onkeydown: (event) => { if (event.key === "Enter") openDrawer(task.task_id); } },
+    el("span", { class: "skey", text: task.jira_key || `#${task.task_id}` }),
+    el("span", { text: task.title.replace(/^[A-Z]+-\d+:\s*/, "") }),
+    el("span", { class: `badge st-${task.status}` },
+      el("span", { class: "icon" + spin, "aria-hidden": "true", text: task.merged ? "✓" : icon }),
+      task.merged ? "Merged" : label),
+    el("span", { class: "meta", text: [where, task.complexity].filter(Boolean).join(" · ") }),
+    el("span", { class: "num", text: fmtCost(task.cost_usd) }));
+}
+
+function renderStories(data) {
+  const box = document.getElementById("stories");
+  const signature = JSON.stringify(data.stories);
+  if (box.dataset.signature === signature) return;
+  box.dataset.signature = signature;
+
+  if (!data.stories.length) {
+    box.replaceChildren(el("div", { class: "empty", text:
+      "No story runs yet. Plan one with POST /stories/<KEY>/plan, then start it with POST /stories/<KEY>/run." }));
+    return;
+  }
+
+  box.replaceChildren(...data.stories.map((story) => {
+    const tone = storyTone(story);
+    const step = storyStep(story);
+    const percent = story.total ? Math.round((story.done / story.total) * 100) : 0;
+    return el("article", { class: `story ${tone === "live" ? "is-live" : tone === "bad" ? "is-bad" : ""}` },
+      el("div", { class: "story-head" },
+        el("span", { class: "skey" }, story.jira_url ? link(story.jira_url, story.story_key) : story.story_key),
+        el("span", { class: "stitle", text: story.summary || "" }),
+        el("span", { class: `chip ${tone}`, text: story.status.replace("_", " ") }),
+        el("span", { class: "meta", text: fmtCost(story.cost_usd) })),
+      el("div", { class: "phase" },
+        tone === "live" ? el("span", { class: "pulse", "aria-hidden": "true" }) : null,
+        story.phase),
+      el("div", { class: "sflow", "aria-label": "Story progress" },
+        STORY_STEPS.map((name, index) =>
+          el("span", { class: "step-s" + (index < step || (index === 3 && step === 3) ? " done" : index === step ? " now" : ""),
+            text: name }))),
+      story.tasks.length
+        ? el("div", { class: "sbar", title: `${story.done} of ${story.total} merged` },
+            el("span", { style: `width:${percent}%` }))
+        : null,
+      story.tasks.map(storyRow),
+      story.concerns.length
+        ? el("ul", { class: "snotes" }, story.concerns.map((text) => el("li", { text }))) : null,
+      el("div", { class: "sfoot" },
+        story.pull_request_url ? el("span", {}, "Pull request: ", link(story.pull_request_url, story.pull_request_url)) : null,
+        story.branch ? el("span", { text: `Branch: ${story.branch}` }) : null,
+        story.doc_target ? el("span", { text: `Doc: ${story.doc_target}` }) : null,
+        el("span", { text: `Run #${story.run_id} · started ${new Date(parseTime(story.created_at)).toLocaleString()}` })));
+  }));
+}
+
 function renderWork(data, visible) {
   const box = document.getElementById("work");
   const show = new Set(visible.map((task) => task.id));
@@ -1673,6 +1787,7 @@ function setLive(kind, text) {
 function normalize(data) {
   data.work_items = data.work_items || [];
   data.activity = data.activity || [];
+  data.stories = data.stories || [];
   for (const task of data.tasks) task.hierarchy = task.hierarchy || [];
 }
 
@@ -1684,10 +1799,10 @@ async function refresh() {
     normalize(state.data);
     state.failures = 0;
     detectChanges(state.data);
-    if (!state.viewChosen && !state.autoViewed && state.data.work_items.length) {
-      // First visit: show the Epic > Story tree whenever Jira hierarchy exists.
+    if (!state.viewChosen && !state.autoViewed && (state.data.stories.length || state.data.work_items.length)) {
+      // First visit: story runs if there are any, else the Epic > Story tree.
       state.autoViewed = true;
-      setView("work", false);
+      setView(state.data.stories.length ? "stories" : "work", false);
     }
     render();
     openFromHash();
@@ -1740,6 +1855,7 @@ document.getElementById("search").addEventListener("input", (event) => {
   state.query = event.target.value;
   render();
 });
+document.getElementById("view-stories").addEventListener("click", () => setView("stories"));
 document.getElementById("view-work").addEventListener("click", () => setView("work"));
 document.getElementById("view-cards").addEventListener("click", () => setView("cards"));
 document.getElementById("view-board").addEventListener("click", () => setView("board"));
@@ -1757,7 +1873,7 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     document.getElementById("search").focus();
   } else if (!typing && !state.drawer && !event.ctrlKey && !event.metaKey && !event.altKey) {
-    const view = { "1": "work", "2": "cards", "3": "board" }[event.key];
+    const view = { "1": "work", "2": "cards", "3": "board", "4": "stories" }[event.key];
     if (view) setView(view);
   }
 });
@@ -1776,7 +1892,7 @@ function openFromHash() {
   const asked = new URLSearchParams(location.search).get("view") || stored("view", "");
   state.viewChosen = Boolean(asked);
   try { state.collapsed = new Set(JSON.parse(stored("collapsed", '["__loose"]'))); } catch { state.collapsed = new Set(["__loose"]); }
-  setView(["board", "work"].includes(asked) ? asked : "cards", false);
+  setView(["board", "work", "stories"].includes(asked) ? asked : "cards", false);
 }
 
 setInterval(tickDurations, 1000);
