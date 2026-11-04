@@ -14,6 +14,7 @@ from orchestrator.app.api.project_routes import router as project_router
 from orchestrator.app.api.stats_routes import router as stats_router
 from orchestrator.app.api.task_routes import router as task_router
 from orchestrator.app.api.verification_routes import router as verification_router
+from orchestrator.app.core.config import get_settings
 from orchestrator.app.db.database import Base, get_db
 from orchestrator.app.db.models import Milestone, Project
 
@@ -26,6 +27,26 @@ def _isolate_from_local_env(monkeypatch):
     monkeypatch.setenv("BASE_BRANCH", "main")
     monkeypatch.setenv("WORKTREES_DIR", "")
     monkeypatch.setenv("STORY_MODE", "false")
+    # Starting the app in a test runs its real startup. With a developer's .env that
+    # would poll their live Jira and run real agents (it once did). Switch all of
+    # that off: no polling, no intake, no pushing, no Jira or GitHub writes.
+    for name, value in {
+        "POLL_INTERVAL_SECONDS": "0",
+        "PLAN_REQUIREMENTS": "false",
+        "PUBLISH_BRANCHES": "false",
+        "OPEN_PULL_REQUEST": "false",
+        "COMMENT_ON_ISSUES": "false",
+        "ISSUE_SOURCE": "gh",
+        "JIRA_BASE_URL": "",
+        "JIRA_EMAIL": "",
+        "JIRA_API_TOKEN": "",
+        "GITHUB_TOKEN": "",
+        "PROJECT_TOKEN": "",
+    }.items():
+        monkeypatch.setenv(name, value)
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest.fixture
