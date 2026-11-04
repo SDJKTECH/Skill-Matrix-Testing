@@ -1,0 +1,751 @@
+{
+	"info": {
+		"_postman_id": "73beeec2-4343-47a0-b531-b3f078eb2b53",
+		"name": "Skill Matrix V2 Master Collection",
+		"description": "Centralized master Postman collection for the Skill Matrix V2 APIs.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Employee",
+			"item": [
+				{
+					"name": "POST Save Employee",
+					"id": "33e26c7a-1af2-4dee-82c6-b2f6744dd935",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"employee@example\",\n  \"name\": \"John Doe\",\n  \"manager_email\": \"manager@example.com\",\n  \"employee_type\": \"FTE\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/saveEmployee_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Update Manager Email",
+					"id": "2b4cb8f1-b31a-4010-86fd-45a8aa9b8a06",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1,\n  \"manager_email\": \"new.manager@example.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/update_manager_email_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Upload CV",
+					"id": "001acaff-e6a1-4acf-b50f-11888bf3e778",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": "{{base_url}}/uploadCv_v2",
+						"description": "Note: Use form-data for CV upload in Postman UI. Set key 'file' to File type."
+					},
+					"response": []
+				},
+				{
+					"name": "POST Get Employee Skills Info",
+					"id": "d470f210-5399-40f3-9dcb-802b92b648ac",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/getEmployeeSkillsInfo_v2"
+					},
+					"response": []
+				}
+			],
+			"id": "ff4330e2-0737-4640-a1c8-d6314af4f0b9"
+		},
+		{
+			"name": "Skills Catalog (Data)",
+			"item": [
+				{
+					"name": "GET Master Skill Hierarchy",
+					"id": "809380c2-5087-42e0-b2fb-63428e2f6466",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/getSkillHierarchyLink_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Add Skill Hierarchy (Single)",
+					"id": "c98b17f2-b1fa-4944-b575-7430942ce88c",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1,\n  \"discipline_name\": \"Engineering\",\n  \"domain_name\": \"Cloud\",\n  \"skill_area\": \"DevOps\",\n  \"framework_name\": \"Kubernetes\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/addSkill_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "PUT Update Skill Hierarchy",
+					"id": "ee8ac1c2-725c-4cf9-aaa3-ac6cecc87b3a",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1,\n  \"skill_hierarchy_id\": 1,\n  \"basic\": \"Level 1\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/addSkill_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "DELETE Skill Hierarchy",
+					"id": "b610bdbd-f9c1-44af-b785-12f300721478",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/addSkill_v2?id=1&employee_id=1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"addSkill_v2"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "1"
+								},
+								{
+									"key": "employee_id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "753d7eb8-d0bd-4fbf-aff8-9cc0bf22be50"
+		},
+		{
+			"name": "Employee Skills",
+			"item": [
+				{
+					"name": "POST Get Employee Skills",
+					"id": "b204277d-93c4-4d4e-89ab-6b78c2830b13",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/getEmployeeSkill_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Save Employee Skill",
+					"id": "a0087f36-676e-4ec7-9173-8ef45e2a399b",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1,\n  \"skills\": [\n    {\n      \"skill_hierarchy_id\": 1,\n      \"level_selected\": 2\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/saveEmployeeSkill_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "GET Pending Skill Requests",
+					"id": "9c13e2d7-4744-4113-ac28-68336ec0ef34",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/getPendingSkillRequest_v2?manager_email=manager@example.com",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"getPendingSkillRequest_v2"
+							],
+							"query": [
+								{
+									"key": "manager_email",
+									"value": "manager@example.com"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "POST Review Skill Request",
+					"id": "1a37bca3-44f5-48f3-82f3-2873fab3a9bb",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"expert_email\": \"manager@example.com\",\n  \"skill_request_id\": 1,\n  \"status\": \"Approved\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/reviewSkillRequest_v2"
+					},
+					"response": []
+				}
+			],
+			"id": "b2975793-f946-436c-985c-101edbd5e543"
+		},
+		{
+			"name": "Certificates",
+			"item": [
+				{
+					"name": "GET Certificate Mapping",
+					"id": "eb7217c1-2385-436f-b09e-cb9c281d0855",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/getCertificateMapping_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Add Master Certificate",
+					"id": "814f5006-595f-4241-99ff-767905265d1f",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1,\n  \"provider_name\": \"AWS\",\n  \"certificate_name\": \"Developer Associate\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/addCertificate_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Get Employee Certificates",
+					"id": "2ba959b1-8613-48bb-87fe-e931d442ace4",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/getEmployeeCertificate_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Save Employee Certificate",
+					"id": "4ec0d624-e2d2-407d-adf7-4b39b34a5ce4",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1,\n  \"certificates\": [\n    {\n      \"certificate_id\": 1,\n      \"status\": \"Completed\"\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/saveEmployeeCertificate_v2"
+					},
+					"response": []
+				}
+			],
+			"id": "1be3dede-d718-4fcd-b15e-32f8843d743e"
+		},
+		{
+			"name": "Trainings",
+			"item": [
+				{
+					"name": "POST Add Master Training",
+					"id": "0da14481-c866-4560-926d-190fee917c01",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1,\n  \"area_name\": \"Development\",\n  \"module_name\": \"React Fast Track\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/addTraining_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "PUT Update Master Training",
+					"id": "afe7c123-74fd-40c2-afc6-fcf5832cbc65",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1,\n  \"training_hierarchy_id\": 1,\n  \"module_name\": \"React Advanced\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/addTraining_v2"
+					},
+					"response": []
+				}
+			],
+			"id": "7d0c83c9-6c4b-4a76-99a5-254448e8f6b1"
+		},
+		{
+			"name": "Reports & Dashboards",
+			"item": [
+				{
+					"name": "POST Employee Skills Report",
+					"id": "018e0bcf-85c0-4a78-b059-e52a6b462277",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"filters\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/getEmployeeSkillsReport_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Employee Training Report",
+					"id": "4af84a21-7f3a-438b-a344-664fca93a134",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"filters\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/getEmployeeTrainingReport_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Employee Certificate Report",
+					"id": "14d389ec-f8bf-42b9-9651-5f4d49bed512",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"filters\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/getEmployeeCertificateReport_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Skill Matrix Report",
+					"id": "c003418d-89f9-448d-a411-2807162c4676",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"filters\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/getEmployeeSkillMatrixReport_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "GET Training Analytics",
+					"id": "17e4e7d9-74a3-4ae8-b8e2-19c0e5555738",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/getTrainingAnalytics_v2?mode=training"
+					},
+					"response": []
+				},
+				{
+					"name": "GET Training Analytics - Certificates",
+					"id": "55a89c6a-7014-49b9-9f1b-920183ca161e",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/getTrainingAnalytics_v2?mode=certificates"
+					},
+					"response": []
+				}
+			],
+			"id": "33e8a2e3-6dfd-4a7e-9bcc-c4a53aad9903"
+		},
+		{
+			"name": "Aggregations & AI",
+			"item": [
+				{
+					"name": "GET Combined Hierarchy",
+					"id": "0baa7398-5ba4-456d-abe2-4804f056bd57",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/getCombinedHierarchy_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Manage Comments",
+					"id": "2bd8471a-8dc8-49bb-8114-16543ffbac58",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employee_id\": 1,\n  \"comment\": \"Great work!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/manageComments_v2"
+					},
+					"response": []
+				},
+				{
+					"name": "POST Ask GenAI Question",
+					"id": "7b12ef71-2cfd-462c-8b2a-6d76fa7aae32",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"query\": \"Who knows React?\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/askQuestion_v2"
+					},
+					"response": []
+				}
+			],
+			"id": "e20d6c73-e277-42ce-a9c8-d2baa56f1343"
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": {
+			"token": "{{token}}"
+		}
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Add pre-request script logic here if needed for dynamic tokens",
+					"console.log('Running pre-request script');"
+				],
+				"id": "5841064d-adfb-4f68-8ed1-3cacc5229f96"
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Basic contract test: check if status is 200 or 201",
+					"pm.test('Status code is 200 or 201', function () {",
+					"    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+					"});"
+				],
+				"id": "af0b7a98-c98b-462d-9c7c-300beb337ee2"
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "your_jwt_token_here",
+			"type": "string"
+		}
+	]
+}

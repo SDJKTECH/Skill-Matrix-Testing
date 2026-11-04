@@ -1,0 +1,63 @@
+{
+  "employeeId": "7357",
+  "employeeEmail": "sushant.kumar@jktech.com",
+  "employeeName": "",
+  "skills": [
+    {
+      "Category": "Analytics",
+      "Sub-Category": "Visualization",
+      "Sub-Sub-Category": "Charts and Graphs",
+      "Tools": "D3.js",
+      "Level": "L3",
+      "hashId": "4c5cca096f28c6e6d743946f82b49c44e7887e0fc4cb0a36c3112e6ea41ee88a"
+    },
+    {
+      "Category": "Analytics",
+      "Sub-Category": "Visualization",
+      "Sub-Sub-Category": "Data Story telling",
+      "Tools": "D3.js",
+      "Level": "L2",
+      "hashId": "0f3c4206374e6686d82fa0a44730e7a8107732440b9c2daee67470164eaf39ce"
+    },
+    {
+      "Category": "Analytics",
+      "Sub-Category": "Visualization",
+      "Sub-Sub-Category": "Reporting",
+      "Tools": "Excel",
+      "Level": "L1",
+      "hashId": "349ec301683596cf8ea1c069f0f7b4e2e4463c36a6e8cd644a8c9d64f5b80628"
+    },
+    {
+      "Category": "Analytics",
+      "Sub-Category": "Visualization",
+      "Sub-Sub-Category": "Dashboarding",
+      "Tools": "Google Sheets",
+      "Level": "L2",
+      "hashId": "7b2695a7fd15b0513b83ab4e991dd85b7d5415f42668ff9425cda1d0680829ac"
+    },
+    {
+      "Category": "Analytics",
+      "Sub-Category": "Visualization",
+      "Sub-Sub-Category": "Reporting",
+      "Tools": "Looker",
+      "Level": "L3",
+      "hashId": "2f9831aa4a2820b7158a5d99f75de68371c204568f7cf3ea90774232803982d9"
+    },
+    {
+      "Category": "Analytics",
+      "Sub-Category": "Visualization",
+      "Sub-Sub-Category": "Dashboarding",
+      "Tools": "Looker",
+      "Level": "L2",
+      "hashId": "5f94bf5c07f5b22ce7370588c7203eec497a36248a00e903103a6c4a59b0f08a"
+    },
+    {
+      "Category": "Analytics",
+      "Sub-Category": "Visualization",
+      "Sub-Sub-Category": "Charts and Graphs",
+      "Tools": "MatPlotLib",
+      "Level": "L1",
+      "hashId": "910babe3a92d2060c93d1eaf576ca275f69da5c23b3c13aabdb253ff5c125e4d"
+    }
+  ]
+}

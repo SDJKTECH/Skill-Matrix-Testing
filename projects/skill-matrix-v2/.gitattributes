@@ -1,0 +1,11 @@
+# Git attributes for managing branch-specific files
+# Files that should NOT be merged to main (dev-only)
+
+# Database schema - dev environment only
+database/ddl_v2.sql merge=ours
+database/ER_DIAGRAM.dbml merge=ours
+database/ER_DIAGRAM.md merge=ours
+
+# Development scripts - dev only
+scripts/dev/* merge=ours
+scripts/test/* merge=ours

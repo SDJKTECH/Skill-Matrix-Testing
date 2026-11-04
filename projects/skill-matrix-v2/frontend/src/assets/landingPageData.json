@@ -1,0 +1,47 @@
+{
+  "intro": "Please review the following guidelines to ensure accurate and professional skill entries before proceeding.",
+
+  "purpose": {
+    "title": "Purpose",
+    "description": "The Skill Matrix helps management maintain a current, searchable record of skills across teams.",
+    "points": [
+      "Track organizational expertise to identify strengths and gaps.",
+      "Enable better project allocation and resource planning.",
+      "Create a transparent, standardized skill repository."
+    ]
+  },
+
+  "benefits": {
+    "title": "Benefits",
+    "list": [
+      "Better project fit and visibility.",
+      "Faster staffing and fewer context switches.",
+      "Supports career development discussions."
+    ]
+  },
+
+  "howToUse": {
+    "title": "How to use",
+    "steps": [
+      "Fill skills honestly and professionally with concise descriptions.",
+      "Select the right category, sub-category, and tools for each entry.",
+      "Choose the correct expertise level (L1, L2, L3).",
+      "Review entries and fix typos, duplicates, or misplaced tools before submitting."
+    ]
+  },
+
+  "disclaimer": {
+    "title": "Disclaimer",
+    "warnings": [
+      "This tool is not for promotions or appraisals.",
+      "Do not enter personal or non-professional data.",
+      "Use responsibly—information is maintained for company records and staffing only."
+    ],
+    "footer": "Data handling: Entries are visible to relevant leadership and staffing teams and may be used for internal reporting."
+  },
+
+  "levelHint": {
+    "label": "What are L1/L2/L3?",
+    "tooltip": "L1: Basic familiarity | L2: Hands-on proficiency | L3: Expert who can mentor"
+  }
+}

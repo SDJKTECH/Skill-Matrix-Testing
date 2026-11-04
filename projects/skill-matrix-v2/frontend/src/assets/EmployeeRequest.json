@@ -1,0 +1,202 @@
+[
+  {
+    "id": 1,
+    "employee": "Sushant Kumar",
+    "skills": [
+      {
+        "Category": "Frontend Development",
+        "Sub-Category": "UI Frameworks",
+        "Sub-Sub-Category": "Component-based UI",
+        "Tools": "React",
+        "Level": "L3",
+        "hashId": "hash-react",
+        "status": "Pending",
+        "skillId": "sk1"
+      },
+      {
+        "Category": "Backend Development",
+        "Sub-Category": "JavaScript Runtime",
+        "Sub-Sub-Category": "Server-side development",
+        "Tools": "Node.js",
+        "Level": "L3",
+        "hashId": "hash-nodejs",
+        "status": "Pending",
+        "skillId": "sk2"
+      },
+      {
+        "Category": "Frontend Development",
+        "Sub-Category": "UI Frameworks",
+        "Sub-Sub-Category": "Component-based UI",
+        "Tools": "React",
+        "Level": "L3",
+        "hashId": "hash-react",
+        "status": "Pending",
+        "skillId": "sk1"
+      },
+      {
+        "Category": "Backend Development",
+        "Sub-Category": "JavaScript Runtime",
+        "Sub-Sub-Category": "Server-side development",
+        "Tools": "Node.js",
+        "Level": "L3",
+        "hashId": "hash-nodejs",
+        "status": "Pending",
+        "skillId": "sk2"
+      },
+      {
+        "Category": "Frontend Development",
+        "Sub-Category": "UI Frameworks",
+        "Sub-Sub-Category": "Component-based UI",
+        "Tools": "React",
+        "Level": "L3",
+        "hashId": "hash-react",
+        "status": "Pending",
+        "skillId": "sk1"
+      },
+      {
+        "Category": "Backend Development",
+        "Sub-Category": "JavaScript Runtime",
+        "Sub-Sub-Category": "Server-side development",
+        "Tools": "Node.js",
+        "Level": "L3",
+        "hashId": "hash-nodejs",
+        "status": "Pending",
+        "skillId": "sk2"
+      },
+      {
+        "Category": "Frontend Development",
+        "Sub-Category": "UI Frameworks",
+        "Sub-Sub-Category": "Component-based UI",
+        "Tools": "React",
+        "Level": "L3",
+        "hashId": "hash-react",
+        "status": "Pending",
+        "skillId": "sk1"
+      },
+      {
+        "Category": "Backend Development",
+        "Sub-Category": "JavaScript Runtime",
+        "Sub-Sub-Category": "Server-side development",
+        "Tools": "Node.js",
+        "Level": "L3",
+        "hashId": "hash-nodejs",
+        "status": "Pending",
+        "skillId": "sk2"
+      },
+      {
+        "Category": "Frontend Development",
+        "Sub-Category": "UI Frameworks",
+        "Sub-Sub-Category": "Component-based UI",
+        "Tools": "React",
+        "Level": "L3",
+        "hashId": "hash-react",
+        "status": "Pending",
+        "skillId": "sk1"
+      },
+      {
+        "Category": "Backend Development",
+        "Sub-Category": "JavaScript Runtime",
+        "Sub-Sub-Category": "Server-side development",
+        "Tools": "Node.js",
+        "Level": "L3",
+        "hashId": "hash-nodejs",
+        "status": "Pending",
+        "skillId": "sk2"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "employee": "Amit Patel",
+    "skills": [
+      {
+        "Category": "Data Engineering",
+        "Sub-Category": "Programming Languages",
+        "Sub-Sub-Category": "Data wrangling and pipelines",
+        "Tools": "Python",
+        "Level": "L3",
+        "hashId": "hash-python",
+        "status": "Pending",
+        "skillId": "sk3"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "employee": "Neha Singh",
+    "skills": [
+      {
+        "Category": "Cloud",
+        "Sub-Category": "Infrastructure",
+        "Sub-Sub-Category": "Cloud Services",
+        "Tools": "AWS",
+        "Level": "L3",
+        "hashId": "hash-aws",
+        "status": "Approved",
+        "skillId": "sk4"
+      },
+      {
+        "Category": "DevOps",
+        "Sub-Category": "Containerization",
+        "Sub-Sub-Category": "Image & Container management",
+        "Tools": "Docker",
+        "Level": "L3",
+        "hashId": "hash-docker",
+        "status": "Pending",
+        "skillId": "sk5"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "employee": "Neha Singh 1",
+    "skills": [
+      {
+        "Category": "Cloud",
+        "Sub-Category": "Infrastructure",
+        "Sub-Sub-Category": "Cloud Services",
+        "Tools": "AWS",
+        "Level": "L3",
+        "hashId": "hash-aws",
+        "status": "Approved",
+        "skillId": "sk4"
+      },
+      {
+        "Category": "DevOps",
+        "Sub-Category": "Containerization",
+        "Sub-Sub-Category": "Image & Container management",
+        "Tools": "Docker",
+        "Level": "L3",
+        "hashId": "hash-docker",
+        "status": "Pending",
+        "skillId": "sk5"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "employee": "Neha Singh 2",
+    "skills": [
+      {
+        "Category": "Cloud",
+        "Sub-Category": "Infrastructure",
+        "Sub-Sub-Category": "Cloud Services",
+        "Tools": "AWS",
+        "Level": "L3",
+        "hashId": "hash-aws",
+        "status": "Approved",
+        "skillId": "sk4"
+      },
+      {
+        "Category": "DevOps",
+        "Sub-Category": "Containerization",
+        "Sub-Sub-Category": "Image & Container management",
+        "Tools": "Docker",
+        "Level": "L3",
+        "hashId": "hash-docker",
+        "status": "Pending",
+        "skillId": "sk5"
+      }
+    ]
+  }
+]

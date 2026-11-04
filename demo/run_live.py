@@ -35,6 +35,11 @@ from run_demo import ROOT, Api, say, wait_for_server  # noqa: E402
 
 from orchestrator.app.core.config import Settings  # noqa: E402
 from orchestrator.app.core.exceptions import OrchestratorError  # noqa: E402
+from orchestrator.app.core.project_config import (  # noqa: E402
+    ProjectConfigError,
+    load_project_config,
+    project_dir,
+)
 from orchestrator.app.github.client import GitHubApi, detect_github_repo  # noqa: E402
 from orchestrator.app.github.projects import (  # noqa: E402
     BoardRef,
@@ -45,6 +50,17 @@ from orchestrator.app.jira.source import make_jira_source  # noqa: E402
 
 LABEL = "agent-task"
 REQUIRED_AGENTS = ("builder", "tester", "reviewer")
+
+
+def project_repo(project: str | None) -> str | None:
+    """The github_repo from the project's config file, if it names one."""
+    if not project:
+        return None
+    try:
+        folder = project_dir(ROOT, project)
+        return load_project_config(folder).get("github_repo")
+    except ProjectConfigError as exc:
+        sys.exit(f"Preflight failed: {exc}")
 
 
 def run(command: list[str]) -> subprocess.CompletedProcess:
@@ -75,7 +91,7 @@ def preflight(args) -> tuple[str, str, GitHubApi]:
     if not args.stub and shutil.which("claude") is None:
         fail("Claude Code CLI ('claude') not found on PATH.")
 
-    repo = args.repo or detect_github_repo(ROOT)
+    repo = args.repo or project_repo(args.project) or detect_github_repo(ROOT)
     if repo is None:
         fail("cannot work out the GitHub repo from 'origin'; pass --repo owner/name.")
 
@@ -278,6 +294,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--backend", choices=["auto", "gh", "rest"], default="auto")
     parser.add_argument("--repo", help="owner/name (default: from origin)")
+    parser.add_argument(
+        "--project",
+        help="run against projects/<name>/ and its orchestrator.config.toml",
+    )
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--poll", type=int, default=15, help="poll seconds")
     parser.add_argument("--budget", type=float, default=2.0, help="USD per agent run")
@@ -359,6 +379,7 @@ def main() -> None:
     env = {
         **os.environ,
         "REPOSITORY_PATH": str(ROOT),
+        **({"PROJECT": args.project} if args.project else {}),
         "ISSUE_SOURCE": (
             "jira" if args.jira else "project" if args.project_mode else "gh"
         ),

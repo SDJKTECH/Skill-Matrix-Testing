@@ -1,0 +1,30 @@
+[
+  {
+    "hashId": 1,
+    "certProvider": "AWS",
+    "certName": "AWS Certified Solutions Architect",
+    "certLevel": "Professional",
+    "validYears": 3
+  },
+  {
+    "hashId": 2,
+    "certProvider": "Microsoft",
+    "certName": "Azure Fundamentals",
+    "certLevel": "Fundamental",
+    "validYears": 2
+  },
+  {
+    "hashId": 3,
+    "certProvider": "Google Cloud",
+    "certName": "Google Cloud Data Engineer",
+    "certLevel": "Associate",
+    "validYears": 3
+  },
+  {
+    "hashId": 4,
+    "certProvider": "Cisco",
+    "certName": "CCNA Networking",
+    "certLevel": "Intermediate",
+    "validYears": 2
+  }
+]

@@ -1,0 +1,6 @@
+functions-framework==3.*
+flask==3.*
+sqlalchemy==2.*
+pg8000==1.*
+python-dotenv==1.*
+psycopg2-binary==2.*

@@ -262,9 +262,12 @@ class AgentService:
             agent_run.status = "RUNNING"
             self.db.commit()
 
+            # In a multi-project workspace the agents work inside the project folder.
+            subdir = getattr(self.settings, "project_subdir", None)
+            project_cwd = Path(worktree_path) / subdir if subdir else worktree_path
             result = self.runner.run(
                 command,
-                cwd=worktree_path,
+                cwd=project_cwd if project_cwd.is_dir() else worktree_path,
                 timeout_seconds=self.settings.agent_timeout_seconds,
                 task_id=task.id,
             )

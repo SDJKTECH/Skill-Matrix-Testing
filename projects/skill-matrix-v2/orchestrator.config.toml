@@ -1,0 +1,7 @@
+# Orchestrator settings for this project. See projects/_template/ for all keys.
+# NOTE: the repo and Jira key below are placeholders; set them before running.
+
+# Issues and PRs go to the Skill Matrix Testing repo that holds this folder.
+github_repo = "SDJKTECH/Skill-Matrix-Testing"
+base_branch = "main"
+# jira_project = "SKILL"

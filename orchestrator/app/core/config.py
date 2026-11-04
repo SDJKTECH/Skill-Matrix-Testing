@@ -4,8 +4,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from orchestrator.app.core.project_config import load_project_config, project_dir
 
 EffortLevel = Literal["low", "medium", "high", "xhigh", "max"]
 
@@ -25,6 +27,14 @@ class Settings(BaseSettings):
 
     database_url: str = "sqlite:///./orchestrator.db"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    # Multi-project workspace. `project` is a name (-> projects/<name>/) or a path
+    # inside the repository. Values in its orchestrator.config.toml fill in every
+    # setting that is not set explicitly in the environment or .env.
+    project: str | None = None
+    projects_dir: str = "projects"
+    # Set from `project`: the project folder relative to the repository root.
+    project_subdir: str | None = None
 
     # Repository and Claude Code execution settings
     repository_path: Path | None = None
@@ -153,6 +163,23 @@ class Settings(BaseSettings):
         default=None,
         gt=0,
     )
+
+    @model_validator(mode="after")
+    def _apply_project(self) -> "Settings":
+        """Resolve `project` and apply its config to settings not set explicitly."""
+        if not self.project:
+            return self
+
+        # Repository root: repository_path if given, else the checkout of this code.
+        root = Path(self.repository_path or Path(__file__).resolve().parents[3])
+        folder = project_dir(root, self.project, self.projects_dir)
+
+        for field, value in load_project_config(folder).items():
+            if field not in self.model_fields_set:
+                setattr(self, field, value)
+
+        self.project_subdir = folder.relative_to(root.resolve()).as_posix()
+        return self
 
 
 @lru_cache

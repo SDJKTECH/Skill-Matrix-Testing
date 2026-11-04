@@ -1,0 +1,768 @@
+{
+  "info": {
+    "name": "Skill Hierarchy V2 API",
+    "_postman_id": "skill-hierarchy-v2-collection",
+    "description": "Postman collection for the Skill Hierarchy V2 Cloud Function.\nCovers GET, POST (single), POST (batch), POST (bulk-upload), PUT, DELETE.\n\nSet the {{base_url}} collection variable to your Cloud Function URL:\n  Local dev:  http://localhost:8080\n  GCP Dev:    https://asia-south1-<project>.cloudfunctions.net/dev_add_skill_v2\n  GCP Prod:   https://asia-south1-<project>.cloudfunctions.net/add_skill_v2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "Base URL. Change to your deployed Cloud Function URL."
+    }
+  ],
+  "item": [
+    {
+      "name": "GET \u2014 Fetch Skill Hierarchies",
+      "description": "Fetch all skill hierarchies or a single one by id query param.",
+      "item": [
+        {
+          "name": "GET All Skill Hierarchies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Returns all skill hierarchy entries with joined data. Expected: 200 with count + results array."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Single Skill Hierarchy by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "skill_hierarchy_id"
+                }
+              ]
+            },
+            "description": "Returns a single entry by id. Expected: 200. If not found: 404."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Single \u2014 Not Found (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=99999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "99999"
+                }
+              ]
+            },
+            "description": "Tests 404 when id does not exist."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POST \u2014 Add Single Skill",
+      "description": "Add one skill hierarchy using a flat JSON body (original single-skill mode).",
+      "item": [
+        {
+          "name": "POST Single Skill \u2014  (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"discipline_name\": \"Engineering\",\n  \"domain_name\": \"Cloud\",\n  \"skill_area\": \"DevOps\",\n  \"framework_name\": \"Kubernetes\",\n  \"discipline_description\": \"Software Engineering discipline\",\n  \"domain_description\": \"Cloud computing and services\",\n  \"skill_area_description\": \"Development and Operations practices\",\n  \"framework_description\": \"Container orchestration platform\",\n  \"basic\": \"Understand pods, deployments, and services\",\n  \"intermediate\": \"Manage clusters, configure RBAC, set up ingress\",\n  \"expert\": \"Architect multi-cluster setups, custom operators, advanced networking\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Creates a new skill hierarchy with all optional fields. Expected: 201."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Skill \u2014 Minimal Required Fields Only",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"discipline_name\": \"Data Science\",\n  \"domain_name\": \"Analytics\",\n  \"skill_area\": \"Machine Learning\",\n  \"framework_name\": \"TensorFlow\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Creates with only required fields. No descriptions or L1/L2/L3. Expected: 201."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Skill \u2014 Duplicate (409 Conflict)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"discipline_name\": \"Engineering\",\n  \"domain_name\": \"Cloud\",\n  \"skill_area\": \"DevOps\",\n  \"framework_name\": \"Kubernetes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Same combination as . Expected: 409 Conflict with existing skill_hierarchy_id."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Skill \u2014 Missing Required Fields (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"discipline_name\": \"Engineering\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Missing domain_name, skill_area, framework_name. Expected: 400 with missing fields list."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Skill \u2014 Unauthorized Role (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 999,\n  \"discipline_name\": \"Engineering\",\n  \"domain_name\": \"Cloud\",\n  \"skill_area\": \"DevOps\",\n  \"framework_name\": \"Helm\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "employee_id=999 should be a non-admin employee in your DB. Expected: 403 Access denied."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POST \u2014 Add Batch Skills",
+      "description": "Add multiple skill hierarchies in one request using the skills array key.",
+      "item": [
+        {
+          "name": "POST Batch Skills \u2014  (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"skills\": [\n    {\n      \"discipline_name\": \"Engineering\",\n      \"domain_name\": \"Cloud\",\n      \"skill_area\": \"DevOps\",\n      \"framework_name\": \"Docker\",\n      \"basic\": \"Build and run containers\",\n      \"intermediate\": \"Multi-stage Dockerfiles, compose services\",\n      \"expert\": \"Optimize images, build CI/CD pipelines\"\n    },\n    {\n      \"discipline_name\": \"Engineering\",\n      \"domain_name\": \"Cloud\",\n      \"skill_area\": \"DevOps\",\n      \"framework_name\": \"Helm\",\n      \"basic\": \"Install and list charts\",\n      \"intermediate\": \"Write custom Helm charts\",\n      \"expert\": \"Manage complex release strategies\"\n    },\n    {\n      \"discipline_name\": \"Data Science\",\n      \"domain_name\": \"Analytics\",\n      \"skill_area\": \"Machine Learning\",\n      \"framework_name\": \"PyTorch\",\n      \"basic\": \"Understand tensors and autograd\",\n      \"intermediate\": \"Train and evaluate neural network models\",\n      \"expert\": \"Custom CUDA kernels and distributed training\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Creates 3 skills in one call. Expected: 201 with summary (created, already_exists, errors) and per-item results."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Batch Skills \u2014 Partial Errors (mixed results)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"skills\": [\n    {\n      \"discipline_name\": \"Engineering\",\n      \"domain_name\": \"Cloud\",\n      \"skill_area\": \"DevOps\",\n      \"framework_name\": \"Ansible\"\n    },\n    {\n      \"discipline_name\": \"Engineering\",\n      \"domain_name\": \"Cloud\",\n      \"skill_area\": \"DevOps\"\n    },\n    {\n      \"discipline_name\": \"QA\",\n      \"domain_name\": \"Testing\",\n      \"skill_area\": \"Automation\",\n      \"framework_name\": \"Selenium\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Item 2 is missing framework_name. Expected: item 1 & 3 created, item 2 returns error. Summary: errors: 1."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Batch Skills \u2014 Empty Array (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"skills\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Skills array is empty. Expected: 400 'skills array is empty'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POST \u2014 Bulk Upload CSV",
+      "description": "Upload a CSV file to bulk-import skill hierarchies. Uses multipart/form-data.\nRequired CSV columns: Category, Sub-Category, Sub-Sub-Category, Tools\nOptional columns: L1, L2, L3\n\nSample CSV:\nCategory,Sub-Category,Sub-Sub-Category,Tools,L1,L2,L3\nEngineering,Cloud,DevOps,Terraform,Write HCL,Manage state,Multi-cloud\nData Science,Analytics,ML,Scikit-learn,Use classifiers,Pipelines,Custom estimators",
+      "item": [
+        {
+          "name": "POST Bulk Upload \u2014 CSV File (201)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "employee_id",
+                  "value": "1",
+                  "type": "text",
+                  "description": "Employee with dept/admin role"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "CSV file with columns: Category, Sub-Category, Sub-Sub-Category, Tools, L1, L2, L3"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bulk-upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bulk-upload"
+              ]
+            },
+            "description": "Attach CSV file with key 'file'. Expected: 201 with created/skipped/faulty_rows summary."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Bulk Upload \u2014 Missing employee_id (400)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Any CSV file"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bulk-upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bulk-upload"
+              ]
+            },
+            "description": "Expected: 400 Missing required field: employee_id."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Bulk Upload \u2014 No File Attached (400)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "employee_id",
+                  "value": "1",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bulk-upload",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bulk-upload"
+              ]
+            },
+            "description": "Expected: 400 No file uploaded."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PUT \u2014 Update Skill Hierarchy",
+      "description": "Update an existing skill hierarchy. Only provided fields are changed. Orphaned master entries are auto-cleaned.",
+      "item": [
+        {
+          "name": "PUT Update \u2014 Framework Name + L1/L2/L3 (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"skill_hierarchy_id\": 1,\n  \"framework_name\": \"Kubernetes v1.30\",\n  \"basic\": \"Understand pods, deployments, and services\",\n  \"intermediate\": \"Manage clusters, configure RBAC, set up ingress, Helm\",\n  \"expert\": \"Architect multi-cluster setups, custom operators, advanced networking\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Updates only framework_name and L1/L2/L3. Domain, discipline, skill_area stay the same. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update \u2014 All Fields (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"skill_hierarchy_id\": 2,\n  \"discipline_name\": \"Data Engineering\",\n  \"domain_name\": \"Big Data\",\n  \"skill_area\": \"Stream Processing\",\n  \"framework_name\": \"Apache Kafka\",\n  \"discipline_description\": \"Data pipeline and transformation engineering\",\n  \"domain_description\": \"Large-scale data processing technologies\",\n  \"skill_area_description\": \"Real-time data stream processing\",\n  \"framework_description\": \"Distributed event streaming platform\",\n  \"basic\": \"Understand topics, producers, and consumers\",\n  \"intermediate\": \"Configure partitions, consumer groups, offset management\",\n  \"expert\": \"Event-driven architectures, Kafka Streams, custom connectors\",\n  \"domain_is_mandatory\": true,\n  \"framework_is_mandatory\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Updates all fields for skill_hierarchy_id=2. Old orphaned master entries auto-cleaned. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update \u2014 Not Found (404)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"skill_hierarchy_id\": 99999,\n  \"framework_name\": \"NonExistentFramework\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "skill_hierarchy_id=99999 does not exist. Expected: 404."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update \u2014 Would Create Duplicate (409)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"skill_hierarchy_id\": 3,\n  \"discipline_name\": \"Engineering\",\n  \"domain_name\": \"Cloud\",\n  \"skill_area\": \"DevOps\",\n  \"framework_name\": \"Kubernetes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "The update target combination already exists in another row. Expected: 409 with existing_skill_hierarchy_id."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update \u2014 Missing skill_hierarchy_id (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_id\": 1,\n  \"framework_name\": \"Helm\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ]
+            },
+            "description": "Missing skill_hierarchy_id. Expected: 400 Missing required field: skill_hierarchy_id."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DELETE \u2014 Remove Skill Hierarchy",
+      "description": "Delete a skill hierarchy link. Orphaned master entries auto-cleaned. Blocked (409) if employee_skills reference it.",
+      "item": [
+        {
+          "name": "DELETE Skill Hierarchy \u2014  (200)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=5&employee_id=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "5",
+                  "description": "Change to actual skill_hierarchy_id in your DB"
+                },
+                {
+                  "key": "employee_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Deletes id=5 and auto-cleans orphaned master entries. Expected: 200 with orphaned_masters_deleted list."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Skill Hierarchy \u2014 Not Found (404)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=99999&employee_id=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "99999"
+                },
+                {
+                  "key": "employee_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "id=99999 does not exist. Expected: 404."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Skill Hierarchy \u2014 Referenced by Employee Skills (409)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=1&employee_id=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Use an id that has employee_skills references in your DB"
+                },
+                {
+                  "key": "employee_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "ON DELETE RESTRICT fires when employee_skills reference this hierarchy. Expected: 409 Conflict."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Skill Hierarchy \u2014 Missing id Param (400)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?employee_id=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ],
+              "query": [
+                {
+                  "key": "employee_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Missing id query param. Expected: 400 Missing required query parameter: id."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Skill Hierarchy \u2014 Unauthorized Role (403)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=5&employee_id=999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "/"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "5"
+                },
+                {
+                  "key": "employee_id",
+                  "value": "999",
+                  "description": "Non-admin employee"
+                }
+              ]
+            },
+            "description": "employee_id=999 has no admin/dept role. Expected: 403 Access denied."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

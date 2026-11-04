@@ -1,0 +1,9 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'asia-south1-docker.pkg.dev/training-project-419308/skill-matrix/devskillmatriximage:latest', '.']
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'asia-south1-docker.pkg.dev/training-project-419308/skill-matrix/devskillmatriximage:latest']
+
+images:
+- 'asia-south1-docker.pkg.dev/training-project-419308/skill-matrix/devskillmatriximage:latest'

@@ -1,0 +1,35 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: ["devlopment"]  # or your branch!
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source
+      uses: actions/checkout@v4
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v2
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Build and Push image to Artifact Registry
+      run: |
+        gcloud builds submit \
+          --tag "${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/skill-matrix/devskillmatriximage:latest"
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy devskillmatriximage \
+          --image="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/skill-matrix/devskillmatriximage:latest" \
+          --region=${{ secrets.GCP_REGION }} \
+          --allow-unauthenticated \
+          --platform=managed \
+          --port=8080

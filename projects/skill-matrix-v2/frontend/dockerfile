@@ -1,0 +1,54 @@
+# Use official Node runtime
+FROM node:22-alpine AS build
+
+WORKDIR /app
+
+# Build arguments for environment variables
+# Pass these via --build-arg in docker build command or set defaults here
+# Prefer VITE_BASE_URL=/ (same-origin). Absolute cloudfunctions.net URLs are
+# ignored by the app in favor of the production proxy in server.mjs.
+ARG VITE_BASE_URL="/"
+ARG VITE_SSO_URL=""
+
+# Convert ARG to ENV so Vite can access them during build
+# Vite automatically reads VITE_* prefixed environment variables at build time
+ENV VITE_BASE_URL=${VITE_BASE_URL}
+ENV VITE_SSO_URL=${VITE_SSO_URL}
+
+# Copy package files first for caching
+COPY package*.json ./
+
+RUN npm install
+
+# Copy all source code
+COPY . .
+
+# Build React app
+# Vite will automatically use the ENV variables set above
+RUN npm run build:prod
+
+# Production image: SPA + same-origin API proxy (attaches Google ID token)
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install only runtime deps needed by server.mjs
+COPY package*.json ./
+RUN npm install --omit=dev express http-proxy-middleware
+
+# Copy build artifacts and proxy server
+COPY --from=build /app/dist ./dist
+COPY server.mjs ./
+
+# Cloud Run expects this
+ENV PORT=8080
+# Set at deploy time (skill-matrix-deploy), e.g.:
+#   FUNCTIONS_BASE_URL=https://asia-south1-PROJECT.cloudfunctions.net/
+#   or .../dev_ for development-prefixed function names
+#   SSO_VERIFY_URL=https://jktech-auth-gateway-....run.app/verify
+#   REQUIRE_SSO_JWT=true to also enforce user JWT verification in the proxy
+ENV FUNCTIONS_BASE_URL=""
+ENV SSO_VERIFY_URL="https://jktech-auth-gateway-140475459295.asia-south1.run.app/verify"
+EXPOSE 8080
+
+CMD ["node", "server.mjs"]

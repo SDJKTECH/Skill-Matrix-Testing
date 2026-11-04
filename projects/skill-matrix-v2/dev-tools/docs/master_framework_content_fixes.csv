@@ -1,0 +1,275 @@
+﻿framework_name,description,basic,intermediate,expert
+Postman,,,"	- Uses environments and variables across multiple stages (dev, staging, production) to manage API configurations.
+	- Builds and organizes test suites using Postman Collections with pre-request and test scripts for validation chains.
+	- Utilizes the Collection Runner to execute multiple requests in sequence and validate workflows end-to-end.
+	- Shares collections and environments with team members using Postman workspaces for collaborative API testing.",
+API Gateways -Apigee,,,"	- Configures API proxies with custom policies for authentication, rate limiting, and traffic management.
+	- Implements data transformation and mediation logic between backend services and API consumers.
+	- Uses Apigee's developer portal features to manage API products, plans, and consumer access.
+	- Monitors API performance and troubleshoots issues using Apigee's analytics and debugging tools.",
+lightgbm,,,,"	- Designs and optimizes production-grade LightGBM pipelines, including custom loss and objective functions.
+	- Implements distributed training and model serving strategies for large-scale, high-throughput ML systems.
+	- Leads model interpretability and monitoring practices using SHAP, feature importance, and drift detection.
+	- Mentors teams on advanced hyperparameter optimization techniques (Bayesian optimization, Optuna) for LightGBM models."
+Marshmallow,"Marshmallow is a Python library for object serialization and deserialization, used to validate, convert, and structure data between Python objects and JSON-compatible formats. It enables developers to define reusable schemas with strong validation rules, streamlining API request/response handling and improving data integrity across services.","	- Understands the purpose of Marshmallow for object serialization and deserialization in Python.
+	- Can define basic Schema classes with simple fields (String, Integer, Boolean) to validate incoming data.
+	- Able to use load() and dump() methods to convert between Python objects and JSON-compatible data.
+	- Handles basic validation errors returned by Marshmallow and surfaces them to the caller.","	- Implements nested schemas and fields.Nested to serialize related or complex objects.
+	- Uses custom validators and the validates decorator to enforce business rules on fields.
+	- Applies pre_load, post_load, pre_dump, and post_dump hooks to transform data during processing.
+	- Integrates Marshmallow schemas with Flask or FastAPI endpoints for request/response validation.","	- Designs reusable, composable schema architectures for large APIs with shared base schemas and mixins.
+	- Optimizes serialization performance for high-throughput APIs, including partial loading and lazy evaluation.
+	- Builds custom fields and metaclasses to extend Marshmallow's core behavior for specialized use cases.
+	- Establishes schema versioning and backward-compatible validation strategies across evolving API contracts."
+Pydantic,"Pydantic is a Python library for data validation and settings management that uses standard type hints to define and enforce data schemas. It powers request/response validation in frameworks like FastAPI and helps teams catch data errors early through clear, type-driven validation and serialization.","	- Understands the purpose of Pydantic for data validation and settings management using Python type hints.
+	- Can define basic BaseModel classes with typed fields and default values.
+	- Uses Pydantic to validate incoming JSON/dict data and raise clear validation errors.
+	- Familiar with common field types (str, int, List, Optional) and basic constraints.","	- Applies custom validators (validator/field_validator) to enforce complex business rules.
+	- Uses nested models, Field() constraints, and aliasing to handle complex data structures.
+	- Integrates Pydantic models with FastAPI for automatic request/response validation and OpenAPI docs.
+	- Configures model settings for ORM mode, aliasing, and immutability.","	- Designs complex, reusable model hierarchies with generics, discriminated unions, and custom root types.
+	- Optimizes validation performance for high-volume services, including use of Pydantic v2's Rust core.
+	- Builds custom types and serializers for domain-specific data (e.g., currency, geo-coordinates).
+	- Leads migration strategies between Pydantic versions and enforces validation standards across services."
+APScheduler,"APScheduler is a Python library for scheduling background jobs and recurring tasks within applications. It supports multiple trigger types and persistent job stores, enabling reliable, configurable task automation for services and web applications.","	- Understands the purpose of APScheduler for scheduling background jobs in Python applications.
+	- Can configure and start a basic scheduler (BackgroundScheduler or BlockingScheduler).
+	- Schedules simple jobs using interval and cron triggers.
+	- Able to start, pause, and remove scheduled jobs using the scheduler API.","	- Configures job stores (e.g., SQLAlchemy, Redis) for persistent job scheduling across restarts.
+	- Implements job listeners to handle execution, error, and missed-job events.
+	- Manages job misfire and coalescing behavior for reliable execution under load.
+	- Integrates APScheduler with web frameworks (Flask, FastAPI) for scheduled background tasks.","	- Designs distributed scheduling architectures using APScheduler with shared job stores across multiple instances.
+	- Implements custom triggers and executors for advanced scheduling scenarios.
+	- Optimizes scheduler performance and reliability for high-volume, mission-critical job pipelines.
+	- Establishes monitoring, alerting, and failure-recovery strategies for production scheduling systems."
+Entity Framework Core,"Entity Framework Core is Microsoft's object-relational mapper (ORM) for .NET applications, enabling developers to work with relational databases using .NET objects. It handles schema migrations, query translation, and change tracking, reducing boilerplate data-access code.","	- Understands the basics of Entity Framework Core as an ORM for .NET applications.
+	- Can define simple entity classes and a DbContext to map to database tables.
+	- Performs basic CRUD operations using EF Core (Add, Find, Update, Remove, SaveChanges).
+	- Uses Code First migrations to create and update a basic database schema.","	- Configures relationships (one-to-many, many-to-many) using Fluent API and data annotations.
+	- Writes LINQ queries with filtering, projection, and eager/lazy loading of related data.
+	- Manages migrations across environments and handles schema evolution safely.
+	- Applies performance practices such as AsNoTracking and query splitting.","	- Designs complex domain models with EF Core, including value objects, owned types, and shadow properties.
+	- Optimizes query performance using compiled queries, indexing strategies, and execution plan analysis.
+	- Implements advanced patterns such as unit of work, repository abstraction, and multi-tenancy with EF Core.
+	- Leads database architecture decisions, including sharding, read replicas, and high-throughput data access."
+Dapper,"Dapper is a lightweight, high-performance micro-ORM for .NET that simplifies executing SQL queries and mapping results to objects, while giving developers direct control over SQL for performance-critical data access.","	- Understands Dapper as a lightweight micro-ORM for executing SQL queries in .NET applications.
+	- Can execute basic queries using Query<T> and Execute methods against a database connection.
+	- Maps simple SQL query results to POCO objects using Dapper's automatic mapping.
+	- Uses parameterized queries to prevent SQL injection in basic data access code.","	- Implements multi-mapping to handle joined queries and populate related object graphs.
+	- Uses stored procedures and dynamic parameters with Dapper for complex data operations.
+	- Manages transactions and connection lifecycle explicitly for multi-step database operations.
+	- Combines Dapper with extensions like Dapper.Contrib for simplified CRUD operations.","	- Designs high-performance data access layers using Dapper for latency-sensitive, high-throughput systems.
+	- Implements custom type handlers and mapping strategies for complex or non-standard data types.
+	- Optimizes bulk insert/update operations and query batching for large datasets.
+	- Establishes best practices for combining Dapper with EF Core in hybrid data access architectures."
+xUnit,"xUnit is a widely used open-source unit testing framework for .NET applications, providing attribute-based test definition, parameterized testing, and strong integration with modern .NET tooling and CI pipelines.","	- Understands the purpose of xUnit as a unit testing framework for .NET applications.
+	- Can write basic test methods using [Fact] and simple Assert statements.
+	- Uses [Theory] and [InlineData] to run parameterized tests with multiple inputs.
+	- Runs and interprets test results using Visual Studio Test Explorer or the dotnet CLI.","	- Implements test fixtures and IClassFixture/ICollectionFixture for shared setup across tests.
+	- Uses mocking frameworks (Moq, NSubstitute) alongside xUnit to isolate dependencies.
+	- Organizes tests using collections, categories, and traits for selective test execution.
+	- Writes integration tests that combine xUnit with test servers or in-memory databases.","	- Designs comprehensive test strategies covering unit, integration, and end-to-end testing with xUnit.
+	- Implements custom attributes, data sources, and test extensions for advanced testing scenarios.
+	- Optimizes test suite performance and parallelization for large codebases with fast CI feedback loops.
+	- Establishes testing standards, coverage targets, and CI/CD integration across teams."
+Nunit,"NUnit is a mature open-source unit testing framework for .NET applications, offering attribute-based test definition, rich assertion constraints, and broad tooling support across IDEs and CI systems.","	- Understands the purpose of NUnit as a unit testing framework for .NET applications.
+	- Can write basic test methods using [Test] attributes and Assert statements.
+	- Uses [TestCase] to run parameterized tests with multiple input values.
+	- Runs and interprets test results using Visual Studio Test Explorer or the dotnet CLI.","	- Implements [SetUp]/[TearDown] and [TestFixture] for structured test lifecycle management.
+	- Uses mocking frameworks (Moq, NSubstitute) alongside NUnit to isolate dependencies.
+	- Organizes tests using categories and constraint-based assertions for expressive test conditions.
+	- Writes integration tests that combine NUnit with test servers or in-memory databases.","	- Designs comprehensive test strategies covering unit, integration, and end-to-end testing with NUnit.
+	- Implements custom attributes, constraints, and test extensions for advanced testing scenarios.
+	- Optimizes test suite performance and parallel execution for large codebases with fast CI feedback loops.
+	- Establishes testing standards, coverage targets, and CI/CD integration across teams."
+React,"React is a JavaScript library for building user interfaces through reusable, component-based architecture. It underpins single-page and complex web applications, offering declarative rendering, a rich hook-based state model, and a large ecosystem of supporting tools.","	- Understands core React concepts including components, JSX, and props.
+	- Can build simple functional components and manage local state using the useState hook.
+	- Handles basic events (onClick, onChange) and renders lists using map().
+	- Uses useEffect for simple side effects such as data fetching on component mount.","	- Manages complex state and side effects using hooks like useReducer, useContext, and useMemo.
+	- Builds reusable component libraries with proper prop typing (PropTypes or TypeScript).
+	- Implements client-side routing using React Router and manages navigation state.
+	- Integrates with REST/GraphQL APIs and handles loading, error, and empty states effectively.","	- Architects large-scale React applications with performance optimization (memoization, code-splitting, lazy loading).
+	- Designs custom hooks and state management solutions (Redux, Zustand, Recoil) for complex application state.
+	- Implements advanced patterns such as render props, compound components, and server-side rendering.
+	- Leads code quality initiatives including testing strategy, accessibility, and design systems."
+Angular,"Angular is a comprehensive, TypeScript-based framework for building large-scale, structured single-page web applications. It provides an opinionated architecture covering components, dependency injection, routing, and reactive forms out of the box.","	- Understands Angular's core concepts including components, modules, and templates.
+	- Can create basic components and bind data using interpolation and property binding.
+	- Handles simple events and two-way data binding using ngModel.
+	- Uses built-in directives (*ngIf, *ngFor) to control template rendering.","	- Implements services and dependency injection to share logic and state across components.
+	- Uses Angular Router for navigation, route guards, and lazy-loaded feature modules.
+	- Builds reactive forms with validation using Angular's ReactiveFormsModule.
+	- Integrates with REST APIs using HttpClient and manages asynchronous data with RxJS observables.","	- Architects large-scale, modular Angular applications with performance optimization (OnPush change detection, lazy loading).
+	- Designs advanced RxJS patterns for complex state management and reactive data flows.
+	- Implements custom directives, pipes, and structural directives for reusable functionality.
+	- Leads standards for testing, accessibility, and component architecture across applications."
+Next.js,"Next.js is a React framework that adds server-side rendering, static site generation, file-based routing, and built-in performance optimizations, enabling teams to build production-grade, SEO-friendly web applications.","	- Understands Next.js as a React framework supporting server-side rendering and static site generation.
+	- Can create basic pages using the file-based routing system.
+	- Uses data-fetching functions (getStaticProps/getServerSideProps or App Router equivalents) to load page data.
+	- Builds and runs a Next.js application locally using the built-in dev server.","	- Implements dynamic routing, API routes, and middleware for backend logic within Next.js.
+	- Optimizes images, fonts, and assets using Next.js built-in optimization features.
+	- Manages data-fetching patterns and state across client and server components.
+	- Configures environment variables and deployment settings for staging/production environments.","	- Architects large-scale Next.js applications using the App Router, server components, and streaming.
+	- Optimizes performance through caching strategies, incremental static regeneration, and edge functions.
+	- Implements advanced authentication, internationalization, and multi-tenant routing strategies.
+	- Leads deployment and CI/CD strategy for Next.js applications on Vercel or custom infrastructure."
+HTML,"HTML (HyperText Markup Language) is the standard markup language used to structure content on the web. Strong HTML skills underpin accessible, semantic, and SEO-friendly page structures across all front-end work.","	- Understands basic HTML document structure, tags, and semantic elements.
+	- Can create simple web pages using headings, paragraphs, lists, links, and images.
+	- Uses forms and basic input elements to collect user data.
+	- Understands the importance of alt text and basic accessibility attributes.","	- Applies semantic HTML5 elements (header, nav, section, article) for well-structured, accessible pages.
+	- Builds accessible forms with proper labeling, validation attributes, and ARIA roles.
+	- Understands how HTML integrates with CSS and JavaScript for interactive web pages.
+	- Optimizes HTML structure for SEO and cross-browser compatibility.","	- Designs complex, highly accessible page structures compliant with WCAG standards.
+	- Optimizes HTML for performance, including lazy loading, resource hints, and minimal markup.
+	- Establishes HTML coding standards and component structure guidelines across large teams.
+	- Mentors others on semantic markup, accessibility, and progressive enhancement best practices."
+CSS,"CSS (Cascading Style Sheets) is the standard language for styling and laying out web pages. Proficiency spans responsive layout techniques, maintainable architecture, and performance-conscious styling for production applications.","	- Understands basic CSS syntax, selectors, and the box model.
+	- Can apply basic styling (colors, fonts, spacing) to HTML elements.
+	- Uses simple layout techniques with margins, padding, and basic positioning.
+	- Applies basic responsive design using media queries.","	- Builds responsive layouts using Flexbox and CSS Grid.
+	- Uses CSS variables, transitions, and animations to enhance user interfaces.
+	- Organizes CSS using methodologies like BEM for maintainable, scalable stylesheets.
+	- Debugs cross-browser styling issues using developer tools.","	- Architects scalable CSS systems (design tokens, utility-first or component-based architectures) for large applications.
+	- Optimizes CSS performance, including critical CSS, code-splitting, and reducing render-blocking styles.
+	- Implements advanced layout and animation techniques for complex, highly interactive interfaces.
+	- Establishes CSS coding standards, theming systems, and design system integration across teams."
+Bootstrap,"Bootstrap is a widely used front-end framework providing a responsive grid system and a library of pre-built UI components, enabling teams to build consistent, mobile-first interfaces quickly.","	- Understands Bootstrap's grid system and basic utility classes for layout and spacing.
+	- Can build simple responsive pages using Bootstrap's pre-built components (buttons, cards, navbars).
+	- Applies Bootstrap's responsive breakpoints to adjust layouts across screen sizes.
+	- Uses Bootstrap's CDN or package installation to set up a project.","	- Customizes Bootstrap components and themes using Sass variables and mixins.
+	- Builds complex, responsive layouts combining grid, flex utilities, and custom components.
+	- Integrates Bootstrap with JavaScript frameworks (React, Angular) using component libraries.
+	- Optimizes Bootstrap usage by including only required modules to reduce bundle size.","	- Designs custom Bootstrap-based design systems and themes tailored to brand guidelines.
+	- Optimizes performance and accessibility of Bootstrap-based applications at scale.
+	- Builds reusable, standardized component libraries on top of Bootstrap for large teams.
+	- Leads migration strategies between Bootstrap versions across large codebases."
+Tailwind,"Tailwind CSS is a utility-first CSS framework that enables building custom interfaces directly in markup using composable utility classes, offering high customization without leaving HTML/JSX.","	- Understands Tailwind's utility-first approach to styling HTML elements directly with classes.
+	- Can build simple responsive layouts using Tailwind's spacing, color, and typography utilities.
+	- Uses Tailwind's responsive prefixes (sm:, md:, lg:) to adjust styles across screen sizes.
+	- Sets up a basic project with Tailwind CSS via CLI or framework integration.","	- Customizes Tailwind's configuration (colors, spacing, breakpoints) via tailwind.config.js.
+	- Builds reusable component patterns using @apply and component extraction techniques.
+	- Implements dark mode, animations, and complex responsive layouts using Tailwind utilities.
+	- Integrates Tailwind with component frameworks (React, Vue) and design systems.","	- Architects scalable design systems using Tailwind with custom plugins and design tokens.
+	- Optimizes Tailwind builds for performance, including purging unused styles for production.
+	- Establishes Tailwind coding standards and component libraries across large engineering teams.
+	- Mentors teams on utility-first CSS architecture and trade-offs versus traditional CSS approaches."
+Sass,"Sass (Syntactically Awesome Style Sheets) is a CSS preprocessor that adds variables, nesting, mixins, and functions, enabling more maintainable and modular stylesheet architecture for large applications.","	- Understands Sass syntax (SCSS) and how it extends standard CSS.
+	- Can use variables, nesting, and basic partials to organize stylesheets.
+	- Compiles Sass files to CSS using a build tool or CLI.
+	- Uses basic mixins and functions to reduce repetition in styles.","	- Builds modular stylesheet architectures using Sass partials, imports, and @use/@forward.
+	- Implements advanced mixins, functions, and control directives (@if, @each, @for) for dynamic styling.
+	- Integrates Sass into build pipelines (Webpack, Vite) with source maps and optimization.
+	- Applies Sass to build responsive, themeable component stylesheets.","	- Architects large-scale Sass systems with design tokens, theming, and scalable partial structures.
+	- Optimizes Sass compilation performance and output size for large applications.
+	- Establishes Sass coding standards and style architecture guidelines across teams.
+	- Builds custom Sass function/mixin libraries reused across multiple projects."
+LESS,"LESS is a CSS preprocessor that extends standard CSS with variables, nesting, and mixins, helping teams write more maintainable and DRY stylesheets that compile down to standard CSS.","	- Understands LESS syntax and how it extends standard CSS with variables and nesting.
+	- Can use basic variables and nested selectors to organize stylesheets.
+	- Compiles LESS files to CSS using a build tool or CLI.
+	- Uses basic mixins to reduce repetition in styles.","	- Builds modular stylesheets using LESS imports and mixin parameters.
+	- Implements operations, functions, and conditional mixins for dynamic styling.
+	- Integrates LESS into build pipelines with source maps and optimization.
+	- Applies LESS to build responsive, themeable component stylesheets.","	- Architects large-scale LESS systems with theming and scalable file structures.
+	- Optimizes LESS compilation performance and output size for large applications.
+	- Establishes LESS coding standards and style architecture guidelines across teams.
+	- Builds custom mixin libraries reused across multiple projects."
+Bulma,"Bulma is a modern, flexbox-based CSS framework offering a responsive grid and pre-built components without any JavaScript dependency, favored for clean markup and easy customization.","	- Understands Bulma's flexbox-based grid system and basic utility classes.
+	- Can build simple responsive pages using Bulma's pre-built components (buttons, cards, navbar).
+	- Applies Bulma's responsive breakpoints to adjust layouts across screen sizes.
+	- Sets up a project using Bulma via CDN or package installation.","	- Customizes Bulma themes and variables using Sass to match brand requirements.
+	- Builds complex, responsive layouts combining Bulma's columns, tiles, and modifiers.
+	- Integrates Bulma with JavaScript frameworks for dynamic, interactive components.
+	- Optimizes Bulma usage by including only required modules to reduce bundle size.","	- Designs custom Bulma-based design systems tailored to brand guidelines.
+	- Optimizes performance and accessibility of Bulma-based applications at scale.
+	- Builds reusable, standardized component libraries on top of Bulma for large teams.
+	- Leads styling architecture decisions for large Bulma-based front-end projects."
+Sketch,"Sketch is a vector-based digital design tool widely used for UI/UX design, prototyping, and building design systems for web and mobile products.","	- Understands Sketch's interface and basic tools for creating vector-based designs.
+	- Can create simple artboards, shapes, and basic UI elements.
+	- Applies basic styling (colors, fonts, borders) to design elements.
+	- Exports basic assets (images, icons) for development handoff.","	- Builds reusable symbols and shared styles for consistent design components.
+	- Uses Sketch plugins to extend functionality for prototyping and collaboration.
+	- Creates responsive design layouts using Sketch's resizing and constraints features.
+	- Collaborates with developers using design handoff tools (Zeplin, Sketch Cloud).","	- Designs and maintains scalable design systems and component libraries in Sketch.
+	- Establishes design standards, style guides, and reusable symbol libraries across teams.
+	- Optimizes design workflows through advanced plugin usage and automation.
+	- Mentors designers on best practices for scalable, maintainable Sketch file architecture."
+Figma,"Figma is a collaborative, browser-based design tool for UI/UX design, prototyping, and design systems, enabling real-time collaboration between designers and developers.","	- Understands Figma's interface and basic tools for creating vector-based designs.
+	- Can create simple frames, shapes, and basic UI elements.
+	- Applies basic styling (colors, fonts, effects) to design elements.
+	- Shares design files and basic prototypes with stakeholders for feedback.","	- Builds reusable components and variants for consistent design systems.
+	- Creates interactive prototypes using Figma's prototyping and interaction features.
+	- Uses auto-layout to build responsive, flexible design components.
+	- Collaborates in real-time with developers and designers using comments and shared libraries.","	- Designs and maintains scalable, enterprise-level design systems and component libraries in Figma.
+	- Builds advanced interactive prototypes with complex logic, variables, and conditional interactions.
+	- Establishes design tokens, plugins, and automation workflows to streamline design-to-development handoff.
+	- Mentors design teams on component architecture, accessibility, and design system governance."
+Fluent UI,"Fluent UI is Microsoft's design system and component library for building consistent, accessible user interfaces across web and Microsoft 365 applications.","	- Understands Fluent UI as Microsoft's design system and component library for building consistent UIs.
+	- Can implement basic Fluent UI components (buttons, text fields, dropdowns) in a React application.
+	- Applies Fluent UI's default theming to match Microsoft design guidelines.
+	- Uses Fluent UI's layout components (Stack, Grid) for basic page structure.","	- Customizes Fluent UI themes and styles to match brand-specific design requirements.
+	- Builds complex, composite components using Fluent UI's advanced controls (DetailsList, Panel, Dialog).
+	- Integrates Fluent UI with application state management and form validation.
+	- Optimizes accessibility of Fluent UI components following Microsoft's accessibility guidelines.","	- Architects scalable design systems built on top of Fluent UI for large enterprise applications.
+	- Builds custom Fluent UI components and extends the library for specialized use cases.
+	- Optimizes performance and bundle size of Fluent UI-based applications at scale.
+	- Leads standards for theming, accessibility, and component reuse across Fluent UI implementations."
+Swift UI,"SwiftUI is Apple's declarative UI framework for building interfaces across iOS, macOS, watchOS, and tvOS using a shared, state-driven view syntax.","	- Understands SwiftUI's declarative syntax for building iOS/macOS user interfaces.
+	- Can create simple views using basic components (Text, Image, Button, VStack, HStack).
+	- Applies basic state management using @State for simple interactive views.
+	- Runs and previews SwiftUI views using Xcode's canvas preview.","	- Manages complex state using @Binding, @ObservedObject, and @EnvironmentObject.
+	- Builds navigation flows using NavigationStack/NavigationView and list-based interfaces.
+	- Integrates SwiftUI with UIKit components and Combine for reactive data flows.
+	- Implements custom animations, transitions, and gesture handling for interactive UIs.","	- Architects large-scale SwiftUI applications with modular, reusable view components.
+	- Optimizes SwiftUI performance for complex view hierarchies and large data sets.
+	- Implements advanced patterns such as custom property wrappers, view modifiers, and MVVM architecture.
+	- Leads adoption of SwiftUI best practices across teams, including testing and accessibility strategies."
+MassTransit,,,"	- Configures message retry policies, circuit breakers, and dead-letter queues for resilient message handling.
+	- Implements request/response and publish/subscribe patterns across multiple services using MassTransit.
+	- Builds and manages simple sagas for coordinating multi-step business processes.
+	- Integrates MassTransit with dependency injection and testing frameworks for reliable message-driven development.",
+GIT -GitHub,"GitHub is a Git-based hosting platform for source control, code review, and CI/CD, widely used to manage collaborative software development workflows.","	- Understands basic Git concepts (commit, branch, merge) and GitHub's repository structure.
+	- Can clone repositories, create branches, and push/pull changes using GitHub.
+	- Creates basic pull requests and resolves simple merge conflicts.
+	- Uses GitHub Issues to track and reference basic tasks or bugs.","	- Manages branching strategies (Git Flow, trunk-based) and enforces code review via pull requests.
+	- Configures GitHub Actions for basic CI/CD workflows (build, test, lint).
+	- Uses GitHub features like protected branches, code owners, and templates to manage team workflows.
+	- Resolves complex merge conflicts and performs interactive rebases to maintain clean history.","	- Designs and maintains complex GitHub Actions pipelines for build, test, and deployment automation.
+	- Establishes branching, release, and versioning strategies across large, multi-team repositories.
+	- Implements GitHub security and governance practices (branch protection, secret scanning, SSO).
+	- Mentors teams on Git internals, advanced workflows, and repository architecture at scale."
+GIT -GitLab,"GitLab is a Git-based DevOps platform combining source control, CI/CD pipelines, and issue tracking in a single application for managing the full software development lifecycle.","	- Understands basic Git concepts (commit, branch, merge) and GitLab's repository structure.
+	- Can clone repositories, create branches, and push/pull changes using GitLab.
+	- Creates basic merge requests and resolves simple merge conflicts.
+	- Uses GitLab Issues to track and reference basic tasks or bugs.","	- Manages branching strategies and enforces code review via merge requests and approvals.
+	- Configures GitLab CI/CD pipelines (.gitlab-ci.yml) for basic build, test, and deployment stages.
+	- Uses GitLab features like protected branches, merge request templates, and issue boards.
+	- Resolves complex merge conflicts and performs interactive rebases to maintain clean history.","	- Designs and maintains complex GitLab CI/CD pipelines with multi-stage builds, caching, and environments.
+	- Establishes branching, release, and versioning strategies across large, multi-team repositories.
+	- Implements GitLab security and governance practices (branch protection, security scanning, SSO).
+	- Mentors teams on Git internals, advanced workflows, and repository architecture at scale."
+GIT -Bitbucket,,"	- Understands basic Git concepts (commit, branch, merge) and Bitbucket's repository structure.
+	- Can clone repositories, create branches, and push/pull changes using Bitbucket.
+	- Creates basic pull requests and resolves simple merge conflicts.
+	- Uses Bitbucket Issues to track and reference basic tasks or bugs.","	- Manages branching strategies and enforces code review via pull requests and approvals.
+	- Configures Bitbucket Pipelines for basic build, test, and deployment automation.
+	- Uses Bitbucket features like branch permissions, default reviewers, and issue tracking.
+	- Resolves complex merge conflicts and performs interactive rebases to maintain clean history.","	- Designs and maintains complex Bitbucket Pipelines with multi-stage builds and deployment environments.
+	- Establishes branching, release, and versioning strategies across large, multi-team repositories.
+	- Implements Bitbucket security and governance practices (branch permissions, access controls, SSO).
+	- Mentors teams on Git internals, advanced workflows, and repository architecture at scale."
+AnyLogic,,,"	- Builds models combining multiple methodologies (agent-based, discrete event, system dynamics) for richer simulations.
+	- Implements custom logic using Java code within AnyLogic to extend model behavior.
+	- Uses experiments (parameter variation, optimization) to analyze model sensitivity and scenarios.
+	- Connects models to external data sources (databases, Excel) for dynamic input and calibration.",
+CRM,,"	- Understands core CRM concepts including customer data management, contact records, and basic reporting.
+	- Can navigate the CRM system to create, update, and search customer/account records.
+	- Performs basic data entry and maintains data accuracy for customer interactions and transactions.
+	- Generates simple standard reports and dashboards to track customer engagement metrics.","	- Configures workflows, business rules, and approval processes within the CRM to automate routine tasks.
+	- Builds custom reports and dashboards combining multiple data sources for analytical insights.
+	- Manages data integrity through validation rules, deduplication, and periodic data cleansing.
+	- Integrates CRM with other systems (ERP, billing, support) to synchronize customer data across platforms.","	- Designs end-to-end CRM architecture including data models, integrations, and automation across business functions.
+	- Leads large-scale CRM enhancement and migration projects, including custom module development.
+	- Establishes governance standards for CRM data quality, security, and user access controls.
+	- Drives strategic use of CRM analytics to inform customer engagement, retention, and business growth decisions."
+Demand Planning -APO DP/SNP,,,"	- Configures and adjusts forecasting models within APO DP, including statistical and causal forecasting methods.
+	- Performs demand planning collaboration across sales, marketing, and supply chain using APO's collaborative planning tools.
+	- Analyzes forecast accuracy metrics (MAPE, bias) and applies corrective adjustments to improve planning outcomes.
+	- Manages SNP heuristics and optimization runs to align supply plans with demand forecasts.",

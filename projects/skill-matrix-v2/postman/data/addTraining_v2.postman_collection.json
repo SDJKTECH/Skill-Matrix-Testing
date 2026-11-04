@@ -1,0 +1,1277 @@
+{
+  "info": {
+    "name": "Employee Training V2 API",
+    "_postman_id": "employee-training-v2-collection",
+    "description": "Postman collection for the addTraining_v2 Cloud Function.\nCovers employee-training enrollments (GET, POST single/batch/bulk-upload, PUT, DELETE, suggestions, report download) and training batches (GET/POST/PUT/DELETE /training_batch).\n\nSet the {{base_url}} collection variable to your Cloud Function URL:\n  Local dev:  http://localhost:8080\n  GCP Dev:    https://asia-south1-<project>.cloudfunctions.net/dev_addTraining_v2\n  GCP Prod:   https://asia-south1-<project>.cloudfunctions.net/addTraining_v2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string",
+      "description": "Base URL. Change to your deployed Cloud Function URL."
+    },
+    {
+      "key": "admin_id",
+      "value": "2",
+      "type": "string",
+      "description": "Admin employee ID with dept/department/admin/hr role, used to authorize writes."
+    },
+    {
+      "key": "employee_id",
+      "value": "1",
+      "type": "string",
+      "description": "Target employee ID to enroll in a training."
+    },
+    {
+      "key": "created_employee_training_id",
+      "value": "",
+      "type": "string",
+      "description": "Auto-set by the POST Single Enrollment test; used by PUT/DELETE requests."
+    },
+    {
+      "key": "created_batch_id",
+      "value": "",
+      "type": "string",
+      "description": "Auto-set by the POST Training Batch test; used by GET/PUT/DELETE /training_batch requests."
+    }
+  ],
+  "item": [
+    {
+      "name": "GET — Fetch Employee Training Records",
+      "description": "Fetch all training enrollments, or filter by id / employee_id / batch_id.",
+      "item": [
+        {
+          "name": "GET All Training Records",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "Returns all employee_trainings rows with joined employee/batch/hierarchy data. Expected: 200 with count + results array."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Single Training by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id={{created_employee_training_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "id", "value": "{{created_employee_training_id}}", "description": "employee_training_id" }
+              ]
+            },
+            "description": "Returns a single training object (not wrapped in results). Expected: 200. If not found: 404."
+          },
+          "response": []
+        },
+        {
+          "name": "GET All Trainings for an Employee",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?employee_id={{employee_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "employee_id", "value": "{{employee_id}}" }
+              ]
+            },
+            "description": "Returns count + results ordered by created_at DESC for the given employee. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "GET All Trainings for a Batch",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?batch_id={{created_batch_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "batch_id", "value": "{{created_batch_id}}" }
+              ]
+            },
+            "description": "Returns count + results for all enrollments in the given batch. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Single — Not Found (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=999999",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "id", "value": "999999" }
+              ]
+            },
+            "description": "Tests 404 when id does not exist."
+          },
+          "response": []
+        },
+        {
+          "name": "GET — Invalid id Parameter (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=abc",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "id", "value": "abc" }
+              ]
+            },
+            "description": "id is not an integer. Expected: 400."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "GET — Suggestion Endpoints",
+      "description": "Autocomplete/dropdown data. All use ?suggest=<type>, GET only.",
+      "item": [
+        {
+          "name": "Suggest — Employees",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?suggest=employees&q=Kumar",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "suggest", "value": "employees" },
+                { "key": "q", "value": "Kumar" }
+              ]
+            },
+            "description": "ILIKE search on emp_id/name/email, max 20 results. Expected: 200 with results array."
+          },
+          "response": []
+        },
+        {
+          "name": "Suggest — Competency",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?suggest=competency",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "suggest", "value": "competency" }
+              ]
+            },
+            "description": "Distinct non-empty competency values from employee_trainings. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "Suggest — Training Hierarchy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?suggest=training_hierarchy",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "suggest", "value": "training_hierarchy" }
+              ]
+            },
+            "description": "All training_hierarchy_links rows joined with area/subarea/module names. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "Suggest — Employee Type (enum)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?suggest=employee_type",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "suggest", "value": "employee_type" }
+              ]
+            },
+            "description": "Static enum values: New Lateral, Existing Lateral, Freshers, Customer, Interns. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "Suggest — Training Status (enum)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?suggest=training_status",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "suggest", "value": "training_status" }
+              ]
+            },
+            "description": "Static enum values: Not Started, In Progress, Completed, Not Completed. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "Suggest — Batch Status (enum)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?suggest=batch_status",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "suggest", "value": "batch_status" }
+              ]
+            },
+            "description": "Static enum values: Planned, Open, In Progress, Completed, Cancelled, Archived. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "Suggest — Training Mode (enum)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?suggest=training_mode",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "suggest", "value": "training_mode" }
+              ]
+            },
+            "description": "Static enum values: Internal Videos, External Platforms, Hybrid, Internal Instructor-led, External Instructor-led. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "Suggest — Unknown Type (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?suggest=xyz",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "suggest", "value": "xyz" }
+              ]
+            },
+            "description": "Unrecognized suggest type. Expected: 400 with list of valid types."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "GET — Download Bulk Upload Report",
+      "description": "Proxy-downloads the latest bulk upload Excel report from GCS.",
+      "item": [
+        {
+          "name": "Download Report — Latest (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?download_report=latest&admin_id={{admin_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "download_report", "value": "latest" },
+                { "key": "admin_id", "value": "{{admin_id}}" }
+              ]
+            },
+            "description": "Streams bulk_upload_report_latest.xlsx as an attachment. Expected: 200. If never generated: 404."
+          },
+          "response": []
+        },
+        {
+          "name": "Download Report — Missing admin_id (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?download_report=latest",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "download_report", "value": "latest" }
+              ]
+            },
+            "description": "Expected: 401 admin_id is required for report download."
+          },
+          "response": []
+        },
+        {
+          "name": "Download Report — Unauthorized Role (403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?download_report=latest&admin_id=999",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "download_report", "value": "latest" },
+                { "key": "admin_id", "value": "999", "description": "Non-admin employee" }
+              ]
+            },
+            "description": "admin_id=999 should be a non-admin employee in your DB. Expected: 403."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POST — Create Single Enrollment",
+      "description": "Create one employee-training enrollment. Hierarchy and batch are auto-resolved/created.",
+      "item": [
+        {
+          "name": "POST Single Enrollment — Full Fields (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('created_employee_training_id', body.employee_training_id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"employee_id\": {{employee_id}},\n  \"area\": \"Cloud Computing\",\n  \"subarea\": \"AWS Services\",\n  \"module\": \"Lambda Functions\",\n  \"batch_num\": \"BATCH-2026-07\",\n  \"area_description\": \"Cloud platforms and services\",\n  \"subarea_description\": \"Amazon Web Services\",\n  \"module_course_level\": \"Intermediate\",\n  \"module_description\": \"Serverless compute\",\n  \"competency\": \"Cloud Architecture\",\n  \"employee_type\": \"Existing Lateral\",\n  \"nominated_by\": \"Preethi TS\",\n  \"start_date\": \"2026-07-01\",\n  \"end_date\": \"2026-07-15\",\n  \"Batch Description\": \"July cohort\",\n  \"Training Mode\": \"External Instructor-led\",\n  \"Training Quarter\": \"Q3 2026\",\n  \"Trainer\": \"Anita Rao\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "Creates a new enrollment; if batch_num doesn't exist yet, creates the batch with the pass-through fields too. Expected: 201. Saves employee_training_id to {{created_employee_training_id}}."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Enrollment — Minimal Required Fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"employee_id\": {{employee_id}},\n  \"area\": \"DevOps\",\n  \"subarea\": \"CI/CD\",\n  \"module\": \"GitHub Actions\",\n  \"batch_num\": \"BATCH-2026-08\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "Only required fields — no descriptions, competency, or dates. training_status auto-derives to 'Not Started'. Expected: 201."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Enrollment — Duplicate (409 Conflict)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"employee_id\": {{employee_id}},\n  \"area\": \"Cloud Computing\",\n  \"subarea\": \"AWS Services\",\n  \"module\": \"Lambda Functions\",\n  \"batch_num\": \"BATCH-2026-07\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "Same employee_id + batch_num as the Full Fields request above. Expected: 409 with existing_employee_training_id."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Enrollment — Batch/Hierarchy Mismatch (409 Conflict)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"employee_id\": {{employee_id}},\n  \"area\": \"Data Science\",\n  \"subarea\": \"Analytics\",\n  \"module\": \"Pandas\",\n  \"batch_num\": \"BATCH-2026-07\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "batch_num 'BATCH-2026-07' already exists under a different hierarchy (Cloud Computing/AWS Services/Lambda Functions). resolve_training_batch raises ConflictError. Expected: 409."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Enrollment — Missing Required Fields (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"area\": \"Cloud Computing\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "Missing employee_id, subarea, module, batch_num. Expected: 400 with missing fields list."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Enrollment — Invalid Employee Type (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"employee_id\": {{employee_id}},\n  \"area\": \"Cloud Computing\",\n  \"subarea\": \"AWS Services\",\n  \"module\": \"S3 & Storage\",\n  \"batch_num\": \"BATCH-2026-09\",\n  \"employee_type\": \"Not A Real Type\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "employee_type is not a valid enum value. Expected: 400."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Enrollment — Target Employee Not Found (404)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"employee_id\": 999999,\n  \"area\": \"Cloud Computing\",\n  \"subarea\": \"AWS Services\",\n  \"module\": \"S3 & Storage\",\n  \"batch_num\": \"BATCH-2026-09\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "employee_id=999999 does not exist. Expected: 404."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Single Enrollment — Unauthorized Role (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": 999,\n  \"employee_id\": {{employee_id}},\n  \"area\": \"Cloud Computing\",\n  \"subarea\": \"AWS Services\",\n  \"module\": \"S3 & Storage\",\n  \"batch_num\": \"BATCH-2026-09\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "admin_id=999 should be a non-admin employee in your DB. Expected: 403 Access denied."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POST — Create Batch Enrollments (trainings array)",
+      "description": "Create multiple enrollments in one request. admin_id authorizes the whole request once.",
+      "item": [
+        {
+          "name": "POST Batch Enrollments —  (201)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"trainings\": [\n    {\n      \"employee_id\": 1,\n      \"area\": \"Cloud Computing\",\n      \"subarea\": \"AWS Services\",\n      \"module\": \"S3 & Storage\",\n      \"batch_num\": \"BATCH-2026-10\",\n      \"employee_type\": \"Existing Lateral\",\n      \"start_date\": \"2026-07-01\"\n    },\n    {\n      \"employee_id\": 2,\n      \"area\": \"DevOps\",\n      \"subarea\": \"CI/CD\",\n      \"module\": \"GitHub Actions\",\n      \"batch_num\": \"BATCH-2026-11\",\n      \"employee_type\": \"Freshers\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "Creates 2 enrollments in one call. Expected: 201 with summary (created, already_exists, errors) and per-item results."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Batch Enrollments — Partial Errors (mixed results)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"trainings\": [\n    {\n      \"employee_id\": 1,\n      \"area\": \"Cloud Computing\",\n      \"subarea\": \"AWS Services\",\n      \"module\": \"EC2\",\n      \"batch_num\": \"BATCH-2026-12\"\n    },\n    {\n      \"employee_id\": 1,\n      \"area\": \"Cloud Computing\"\n    },\n    {\n      \"employee_id\": 2,\n      \"area\": \"QA\",\n      \"subarea\": \"Testing\",\n      \"module\": \"Selenium\",\n      \"batch_num\": \"BATCH-2026-13\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "Item 2 is missing subarea/module/batch_num. Expected: items 1 & 3 created, item 2 returns an error result. summary.errors: 1."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Batch Enrollments — Empty Array (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"trainings\": []\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "trainings array is empty. Expected: 400 'trainings array is empty'."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Batch Enrollments — Missing admin_id (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainings\": [\n    {\n      \"employee_id\": 1,\n      \"area\": \"Cloud Computing\",\n      \"subarea\": \"AWS Services\",\n      \"module\": \"EC2\",\n      \"batch_num\": \"BATCH-2026-12\"\n    }\n  ]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "Missing admin_id at the top level. Expected: 400 Missing required field: admin_id."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POST — Bulk Upload Enrollments (CSV/Excel)",
+      "description": "Upload a CSV or Excel file to bulk-create/update enrollments, grouped by batch_num.\nRequired columns: batch_num, Employee ID, Area, Sub Area, Module\nOptional columns: Batch Description, Area Description, Sub Area Description, Module Course Level, Module Description, Employee Type, Start Date, End Date, Competency, Training Status, Status Remarks, Nominated By, Training Mode, Training Quarter, Batch Status, Batch Status Remarks, Duration, Trainer, Batch Size, Prerequisite, Training Content, Resources\n\nSample CSV:\nbatch_num,Employee ID,Area,Sub Area,Module,Start Date,Employee Type\nBATCH-2026-14,000001,Cloud Computing,AWS Services,VPC,2026-07-01,Existing Lateral\nBATCH-2026-14,000002,Cloud Computing,AWS Services,VPC,2026-07-01,Freshers",
+      "item": [
+        {
+          "name": "POST Bulk Upload — CSV File (201)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "admin_id",
+                  "value": "{{admin_id}}",
+                  "type": "text",
+                  "description": "Employee with dept/department/admin/hr role"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "CSV/Excel file with columns: batch_num, Employee ID, Area, Sub Area, Module, ..."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bulk-upload",
+              "host": ["{{base_url}}"],
+              "path": ["bulk-upload"]
+            },
+            "description": "Attach file with key 'file'. Rows are grouped by batch_num; one batch is resolved/created per group, then rows are inserted/updated/skipped. Expected: 201 with summary (created, updated, already_exists, errors), report_url, and optional warnings for ignored columns."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Bulk Upload — Missing admin_id (400)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "Any CSV file"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bulk-upload",
+              "host": ["{{base_url}}"],
+              "path": ["bulk-upload"]
+            },
+            "description": "Expected: 400 Missing required field: admin_id."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Bulk Upload — No File Attached (400)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "admin_id",
+                  "value": "{{admin_id}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bulk-upload",
+              "host": ["{{base_url}}"],
+              "path": ["bulk-upload"]
+            },
+            "description": "Expected: 400 No file uploaded."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Bulk Upload — Missing Required Columns (400)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "admin_id",
+                  "value": "{{admin_id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "",
+                  "description": "CSV file missing one of: batch_num, Employee ID, Area, Sub Area, Module"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/bulk-upload",
+              "host": ["{{base_url}}"],
+              "path": ["bulk-upload"]
+            },
+            "description": "File is missing a required column. Expected: 400 with the list of missing columns."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PUT — Update Employee Training Enrollment",
+      "description": "Partial update — only fields present in the body are changed. batch_num falls back to the record's current batch if omitted.",
+      "item": [
+        {
+          "name": "PUT Update — Status + End Date (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_training_id\": {{created_employee_training_id}},\n  \"admin_id\": {{admin_id}},\n  \"training_status\": \"Completed\",\n  \"end_date\": \"2026-07-20\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "Updates status and end_date only; batch link is left untouched since batch_num/training_hierarchy_id aren't in the body. Expected: 200 with the updated record."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update — Reassign Batch (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_training_id\": {{created_employee_training_id}},\n  \"admin_id\": {{admin_id}},\n  \"batch_num\": \"BATCH-2026-08\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "batch_num is present, so resolve_training_batch runs and batch_id is reassigned. Uses the record's current training_hierarchy_id since none is supplied. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update — Not Found (404)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_training_id\": 999999,\n  \"admin_id\": {{admin_id}},\n  \"training_status\": \"Completed\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "employee_training_id=999999 does not exist. Expected: 404."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update — Invalid Training Status (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_training_id\": {{created_employee_training_id}},\n  \"admin_id\": {{admin_id}},\n  \"training_status\": \"Not A Real Status\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "training_status is not a valid enum value. Expected: 400."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update — No Fields Supplied (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_training_id\": {{created_employee_training_id}},\n  \"admin_id\": {{admin_id}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "No updatable fields in the body. Expected: 400 No Employee Training fields supplied to update."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update — Unauthorized Role (403)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employee_training_id\": {{created_employee_training_id}},\n  \"admin_id\": 999,\n  \"training_status\": \"Completed\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": ["/"]
+            },
+            "description": "admin_id=999 should be a non-admin employee in your DB. Expected: 403 Access denied."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DELETE — Remove Employee Training Enrollment",
+      "description": "Deletes an enrollment. Associated comment rows are removed automatically (ON DELETE CASCADE).",
+      "item": [
+        {
+          "name": "DELETE Enrollment —  (200)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id={{created_employee_training_id}}&admin_id={{admin_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "id", "value": "{{created_employee_training_id}}" },
+                { "key": "admin_id", "value": "{{admin_id}}" }
+              ]
+            },
+            "description": "Deletes the enrollment created earlier and syncs the CSV. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Enrollment — Not Found (404)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=999999&admin_id={{admin_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "id", "value": "999999" },
+                { "key": "admin_id", "value": "{{admin_id}}" }
+              ]
+            },
+            "description": "id=999999 does not exist. Expected: 404."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Enrollment — Missing id Param (400)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?admin_id={{admin_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "admin_id", "value": "{{admin_id}}" }
+              ]
+            },
+            "description": "Missing id query param. Expected: 400 Missing required query parameter: id."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Enrollment — Unauthorized Role (403)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/?id=1&admin_id=999",
+              "host": ["{{base_url}}"],
+              "path": ["/"],
+              "query": [
+                { "key": "id", "value": "1" },
+                { "key": "admin_id", "value": "999", "description": "Non-admin employee" }
+              ]
+            },
+            "description": "admin_id=999 has no admin/dept/hr role. Expected: 403 Access denied."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "GET — Fetch Training Batch(es)",
+      "description": "Fetch all training batches, or filter by batch_id / batch_num.",
+      "item": [
+        {
+          "name": "GET All Training Batches",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/training_batch",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"]
+            },
+            "description": "Returns all batches with employee_count/completed_count, ordered by start_date DESC. Expected: 200 with batches + count."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Single Training Batch by batch_id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/training_batch?batch_id={{created_batch_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"],
+              "query": [
+                { "key": "batch_id", "value": "{{created_batch_id}}" }
+              ]
+            },
+            "description": "Expected: 200 with { \"batch\": [ {...} ] } (still a list under the batch key)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Training Batch by batch_num",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/training_batch?batch_num=2026-07",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"],
+              "query": [
+                { "key": "batch_num", "value": "2026-07" }
+              ]
+            },
+            "description": "Expected: 200 with { \"batches\": [...], \"count\": <int> } (list shape, even though only one batch matches)."
+          },
+          "response": []
+        },
+        {
+          "name": "GET Training Batch — Invalid batch_id (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/training_batch?batch_id=abc",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"],
+              "query": [
+                { "key": "batch_id", "value": "abc" }
+              ]
+            },
+            "description": "batch_id is not an integer. Expected: 400."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POST — Create Training Batch",
+      "description": "Create a training batch directly (with full control over schedule/trainer/mode/status), independent of any enrollment.",
+      "item": [
+        {
+          "name": "POST Training Batch —  (201)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const body = pm.response.json();",
+                  "    pm.collectionVariables.set('created_batch_id', body.batch_id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"area\": \"Python\",\n  \"subarea\": \"Backend\",\n  \"module\": \"FastAPI\",\n  \"batch_num\": \"2026-07\",\n  \"batch_desc\": \"July cohort\",\n  \"batch_status\": \"Planned\",\n  \"training_mode\": \"Hybrid\",\n  \"trainer\": \"Anita Rao\",\n  \"start_date\": \"2026-07-01\",\n  \"end_date\": \"2026-07-15\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/training_batch",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"]
+            },
+            "description": "Resolves/creates the area/subarea/module hierarchy, then creates a new batch row. Expected: 201. Saves batch_id to {{created_batch_id}}."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Training Batch — Duplicate batch_num (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"area\": \"Python\",\n  \"subarea\": \"Backend\",\n  \"module\": \"FastAPI\",\n  \"batch_num\": \"2026-07\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/training_batch",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"]
+            },
+            "description": "batch_num '2026-07' already exists. Expected: 409."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Training Batch — Missing Required Fields (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"area\": \"Python\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/training_batch",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"]
+            },
+            "description": "Missing subarea, module, batch_num. Expected: 400."
+          },
+          "response": []
+        },
+        {
+          "name": "POST Training Batch — Unauthorized Role (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": 999,\n  \"area\": \"Python\",\n  \"subarea\": \"Backend\",\n  \"module\": \"Django\",\n  \"batch_num\": \"2026-09\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/training_batch",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"]
+            },
+            "description": "admin_id=999 should be a non-admin employee in your DB. Expected: 403 Access denied."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PUT — Update Training Batch",
+      "description": "Update an existing training batch. Only provided fields are changed.",
+      "item": [
+        {
+          "name": "PUT Update Training Batch — Status + End Date (200)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"batch_id\": {{created_batch_id}},\n  \"batch_status\": \"Completed\",\n  \"end_date\": \"2026-07-20\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/training_batch",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"]
+            },
+            "description": "Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update Training Batch — Rename Conflict (409)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"batch_id\": {{created_batch_id}},\n  \"batch_num\": \"2026-07\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/training_batch",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"]
+            },
+            "description": "Renaming to a batch_num already owned by another batch. Expected: 409."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update Training Batch — No Fields Supplied (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"batch_id\": {{created_batch_id}}\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/training_batch",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"]
+            },
+            "description": "No updatable fields and no locator change. Expected: 400."
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Update Training Batch — Not Found (409)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"admin_id\": {{admin_id}},\n  \"batch_id\": 999999,\n  \"batch_status\": \"Completed\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/training_batch",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"]
+            },
+            "description": "batch_id=999999 does not exist. Expected: 409 (batch not found is raised as a ConflictError here, not a 404)."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DELETE — Remove Training Batch",
+      "description": "Deletes a training batch. Refused (409) if any employee_trainings still reference it.",
+      "item": [
+        {
+          "name": "DELETE Training Batch — Blocked by Enrollments (409)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/training_batch?batch_id={{created_batch_id}}&admin_id={{admin_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"],
+              "query": [
+                { "key": "batch_id", "value": "{{created_batch_id}}" },
+                { "key": "admin_id", "value": "{{admin_id}}" }
+              ]
+            },
+            "description": "Run this while enrollments still reference the batch. Expected: 409 with employee_training_count."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Training Batch —  (200)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/training_batch?batch_id={{created_batch_id}}&admin_id={{admin_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"],
+              "query": [
+                { "key": "batch_id", "value": "{{created_batch_id}}" },
+                { "key": "admin_id", "value": "{{admin_id}}" }
+              ]
+            },
+            "description": "Run this only after all enrollments referencing the batch have been deleted/reassigned. Expected: 200."
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Training Batch — Unauthorized Role (403)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/training_batch?batch_id={{created_batch_id}}&admin_id=999",
+              "host": ["{{base_url}}"],
+              "path": ["training_batch"],
+              "query": [
+                { "key": "batch_id", "value": "{{created_batch_id}}" },
+                { "key": "admin_id", "value": "999", "description": "Non-admin employee" }
+              ]
+            },
+            "description": "admin_id=999 has no admin/dept/hr role. Expected: 403 Access denied."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

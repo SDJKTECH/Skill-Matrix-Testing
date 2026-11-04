@@ -1,0 +1,353 @@
+// Skill Matrix V2 Database Schema
+// Use this file with https://dbdiagram.io to generate a visual ER diagram
+// You can drag and rearrange tables in dbdiagram.io for better layout
+
+Project skill_matrix_v2 {
+  database_type: 'PostgreSQL'
+  Note: 'Skill Matrix V2 Database Schema'
+}
+
+// ============================================
+// Core Entity
+// ============================================
+
+Table Employee {
+  id serial [pk, increment]
+  email varchar(255) [not null, unique]
+  emp_id varchar(50)
+  name varchar(255)
+  job_title varchar(255)
+  department varchar(255)
+  reports_to int [ref: > Employee.id]
+  role role_enum
+  is_manager bool [not null, default: false]
+  cv_public_url text
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  
+  Note: 'Core employee table with self-referencing manager (reports_to) relationship and enum role'
+}
+
+// ============================================
+// Skill Hierarchy Tables
+// ============================================
+
+Table MasterDomain {
+  id serial [pk, increment]
+  domain_name varchar(255) [not null]
+  description text
+  is_mandatory bool [not null, default: false]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table MasterDiscipline {
+  id serial [pk, increment]
+  discipline_name varchar(255) [not null]
+  description text
+  is_mandatory bool [not null, default: false]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  ismandatory bool
+}
+
+Table MasterSkillArea {
+  id int [pk]
+  skill_area varchar(255) [not null]
+  description text
+  is_mandatory bool [not null, default: false]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  ismandatory bool
+}
+
+Table MasterFramework {
+  id serial [pk, increment]
+  framework_name varchar(255) [not null]
+  basic text
+  intermediate text
+  expert text
+  description text
+  is_mandatory bool [not null, default: false]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  ismandatory bool
+}
+
+Table SkillHierarchyLink {
+  id serial [pk, increment]
+  domain_id int [not null, ref: > MasterDomain.id]
+  discipline_id int [not null, ref: > MasterDiscipline.id]
+  skill_area_id int [not null, ref: > MasterSkillArea.id]
+  framework_id int [not null, ref: > MasterFramework.id]
+  skillarea_id int
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (domain_id, discipline_id, skill_area_id, framework_id) [unique]
+  }
+  
+  Note: 'Junction table combining Domain, Discipline, SkillArea, and Framework'
+}
+
+Table EmployeeSkills {
+  id serial [pk, increment]
+  employee_id int [not null, ref: > Employee.id]
+  skill_hierarchy_id int [not null, ref: > SkillHierarchyLink.id]
+  level_selected skill_level_enum
+  approval_status approval_status_enum
+  rejection_reason text
+  requested_at timestamp
+  reviewed_at timestamp
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  reviewed_by int [ref: > Employee.id]
+
+  Note: 'Employee skill assignments with approval workflow'
+}
+
+// ============================================
+// Certificate Tables
+// ============================================
+
+Table MasterCertificate {
+  id int [pk]
+  cert_name varchar(500) [not null]
+  cert_level varchar(100) [not null]
+  valid_years varchar [default: '0']
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (cert_name, cert_level) [unique]
+  }
+}
+
+Table MasterCertificateProvider {
+  id int [pk]
+  cert_provider varchar(255) [not null, unique]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table ProviderCertificateMapping {
+  id serial [pk, increment]
+  provider_id int [not null, ref: > MasterCertificateProvider.id]
+  certificate_id int [not null, ref: > MasterCertificate.id]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (provider_id, certificate_id) [unique]
+  }
+  
+  Note: 'Junction table mapping providers to certificates'
+}
+
+Table EmployeeCertificates {
+  id serial [pk, increment]
+  employee_id int [not null, ref: > Employee.id]
+  certificate_id int [not null, ref: > ProviderCertificateMapping.id]
+  issued_date timestamp
+  expiry_date timestamp
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+// ============================================
+// Training Tables
+// ============================================
+
+Table MasterArea {
+  area_id serial [pk, increment]
+  area_name varchar(255) [not null]
+  description text
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table MasterSubarea {
+  sub_area_id serial [pk, increment]
+  sub_area_name varchar(255) [not null]
+  description text
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table MasterModule {
+  module_id serial [pk, increment]
+  module_name varchar(255) [not null]
+  course_level text
+  description text
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+}
+
+Table TrainingHierarchyLinks {
+  training_hierarchy_id serial [pk, increment]
+  area_id int [not null, ref: > MasterArea.area_id]
+  sub_area_id int [not null, ref: > MasterSubarea.sub_area_id]
+  module_id int [not null, ref: > MasterModule.module_id]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (area_id, sub_area_id, module_id) [unique]
+  }
+  
+  Note: 'Junction table combining Area, Subarea, and Module'
+}
+
+Table TrainingBatches {
+  id serial [pk, increment]
+  batch_num varchar(255) [not null, unique]
+  training_hierarchy_id int [not null, ref: > TrainingHierarchyLinks.training_hierarchy_id]
+  batch_desc text
+  training_quarter text
+  batch_status training_batch_status_enum [default: 'Planned']
+  batch_status_remarks text
+  start_date date
+  end_date date
+  duration text
+  training_mode training_mode_enum
+  trainer text
+  batch_size int
+  prerequisite text
+  training_content text
+  resources text
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  Note: 'One row per physical training run/cohort; linked to a training hierarchy (area/subarea/module)'
+}
+
+Table EmployeeTrainings {
+  employee_training_id serial [pk, increment]
+  employee_id int [not null, ref: > Employee.id]
+  batch_id int [not null, ref: > TrainingBatches.id]
+  competency text
+  training_status training_status_enum
+  status_remarks text
+  employee_type employee_type_enum
+  nominated_by text
+  start_date date
+  end_date date
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (employee_id, batch_id) [unique]
+  }
+
+  Note: 'Employee enrollment in a training batch, with status and type tracking'
+}
+
+// ============================================
+// Comment Table (Polymorphic)
+// ============================================
+
+Table Comment {
+  comment_id serial [pk, increment]
+  employee_training_id int [ref: > EmployeeTrainings.employee_training_id]
+  employee_certificate_id int [ref: > EmployeeCertificates.id]
+  employee_skill_id int [ref: > EmployeeSkills.id]
+  comment_type comment_type_enum
+  comment_text text
+  commented_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  commented_by_id int [not null, ref: > Employee.id]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  batch_id int [ref: > TrainingBatches.id]
+
+  Note: 'Polymorphic comment table - exactly one of employee_training_id, employee_certificate_id, employee_skill_id, or batch_id should be set (no longer DB-enforced by a CHECK constraint; enforced in application code)'
+}
+
+// ============================================
+// ENUM Types
+// ============================================
+
+Enum skill_level_enum {
+  L1
+  L2
+  L3
+}
+
+Enum approval_status_enum {
+  Pending
+  Approved
+  Rejected
+  Pre_Approved
+}
+
+Enum training_status_enum {
+  Not_Started
+  In_Progress
+  Completed
+  Not_Completed
+}
+
+Enum employee_type_enum {
+  New_Lateral
+  Existing_Lateral
+  Freshers
+  Customer
+  Interns
+}
+
+Enum training_batch_status_enum {
+  Planned
+  Open
+  In_Progress
+  Completed
+  Cancelled
+  Archived
+}
+
+Enum training_mode_enum {
+  Internal_Videos
+  External_Platforms
+  Hybrid
+  Internal_Instructor_led
+  External_Instructor_led
+}
+
+Enum role_enum {
+  Admin
+  Dept
+  HR
+  Manager
+  User
+}
+
+
+Enum comment_type_enum {
+  Employee
+  Manager
+  Department
+}
+
+// ============================================
+// Webhook Configuration Tables
+// ============================================
+
+Table EventSubscriptionsConfig {
+  id serial [pk, increment]
+  event_action varchar(100) [not null]
+  target_url varchar(2048) [not null]
+  http_method varchar(20) [default: 'POST']
+  headers jsonb
+  params jsonb
+  pubsub_topic varchar(255) [not null]
+  pubsub_subscription varchar(255) [not null]
+  is_active bool [default: true]
+  created_by int
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  
+  indexes {
+    (event_action, target_url) [unique]
+  }
+  
+  Note: 'Configuration table for mapping internal events to GCP Pub/Sub webhook pushes'
+}

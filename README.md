@@ -20,6 +20,58 @@ A platform for coordinating AI coding agents using Claude Code, Git branches, Gi
 - SQLite
 - FastAPI
 - Jira Cloud (optional task source)
+
+## Skill Matrix Testing: orchestrator + projects
+
+This repository is a multi-project workspace. The orchestrator lives at the root and
+each project it works on is a plain, tracked folder under `projects/`:
+
+```
+Skill Matrix Testing/
+├── orchestrator/              orchestrator code (from agent-orchestrator, `development`)
+├── demo/                      run_live.py etc.
+└── projects/
+    ├── _template/             copy this to start a new project
+    └── skill-matrix-v2/       the first project (code + orchestrator.config.toml)
+```
+
+Each project has an `orchestrator.config.toml` (Jira key, GitHub repo, base branch,
+code/test roots). The orchestrator reads it, runs its agents with the project folder as
+their working directory, and uses the project's settings for Jira and GitHub. Secrets
+(tokens) stay in `.env`; the config file only accepts the keys listed in
+`projects/_template/orchestrator.config.toml`. Anything set explicitly in the
+environment or `.env` wins over the file.
+
+Note: projects are folders of this repository, not separate git repos. Worktrees,
+branches and pull requests are made in *this* repo, so `github_repo` in a project's config
+should normally be this repository.
+
+### Run the orchestrator against a project
+
+```bash
+python demo/run_live.py --project skill-matrix-v2            # live, real Claude
+# or, when starting the server yourself:
+PROJECT=skill-matrix-v2 uvicorn orchestrator.app.main:app    # PowerShell: $env:PROJECT=...
+```
+
+`--project`/`PROJECT` accepts a name (`projects/<name>/`) or a path inside the repo.
+
+### Add a new project
+
+1. `cp -r projects/_template projects/<name>` (then add the project's code to that folder).
+2. Edit `projects/<name>/orchestrator.config.toml`: set `github_repo`, `base_branch`,
+   and the Jira key if used.
+3. Commit it, then run with `--project <name>`. No orchestrator code changes are needed.
+
+### skill-matrix-v2 provenance
+
+`projects/skill-matrix-v2/` was imported as a one-time snapshot of
+<https://github.com/jktech-training/skill-matrix-v2> (`main`) with its `.git` removed,
+so there is no subtree/submodule link and `git subtree pull` will not work. To bring in
+upstream changes, copy the files over by hand and commit them. `frontend/key.json`
+(a committed Google service-account private key) was deliberately **not** imported;
+that key is exposed upstream and should be rotated.
+
 ## Project structure
 
 ```

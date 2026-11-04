@@ -1,0 +1,19 @@
+# Copy this file to projects/<your-project>/orchestrator.config.toml and edit it.
+# Only the keys below are allowed. Secrets (tokens, API keys) belong in .env, never here.
+# Anything set explicitly in the environment / .env wins over this file.
+
+# GitHub repository whose issues and pull requests this project uses (owner/name).
+github_repo = "owner/repo"
+base_branch = "main"
+# git_remote = "origin"
+# issue_label = "agent-task"
+
+# Jira (leave out if the project does not use Jira)
+# jira_project = "PROJ"
+# jira_base_url = "https://your-site.atlassian.net"
+# jira_trigger_status = "To Do"
+# jira_skip_types = "Epic,Story"
+
+# Where the agents may put files for a Jira task (paths relative to the repo root).
+# jira_code_root = "projects/your-project/src"
+# jira_tests_root = "projects/your-project/tests"

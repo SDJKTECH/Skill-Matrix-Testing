@@ -1,0 +1,71 @@
+name: Trigger Public Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        type: choice
+        options:
+          - main
+          - development
+      deployment_type:
+        description: 'What to deploy'
+        required: false
+        type: choice
+        options:
+          - full
+          - backend
+          - frontend
+        default: 'full'
+      force_deploy:
+        description: 'Force redeploy even if no code changes (for region/secret/DB migrations)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Public Deployment via repository_dispatch
+        run: |
+          BRANCH="${{ inputs.branch }}"
+          # Use the current repository dynamically instead of a hardcoded name
+          REPO_NAME="${{ github.repository }}"
+          DEPLOYMENT_TYPE="${{ inputs.deployment_type || 'full' }}"
+          FORCE_DEPLOY="${{ inputs.force_deploy || false }}"
+          
+          echo "Triggering deployment:"
+          echo "  Repository: $REPO_NAME"
+          echo "  Branch: $BRANCH"
+          echo "  Deployment Type: $DEPLOYMENT_TYPE"
+          echo "  Force Deploy: $FORCE_DEPLOY"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST https://api.github.com/repos/jktech-training/skill-matrix-deploy/dispatches \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.PUBLICTOKENPULL }}" \
+            -d "{
+              \"event_type\": \"trigger-from-private\",
+              \"client_payload\": {
+                \"repository\": \"$REPO_NAME\",
+                \"ref\": \"$BRANCH\",
+                \"deployment_type\": \"$DEPLOYMENT_TYPE\",
+                \"force_deploy\": $FORCE_DEPLOY
+              }
+            }")
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          
+          if [ "$HTTP_CODE" -eq 204 ] || [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Deployment trigger sent successfully! (HTTP $HTTP_CODE)"
+            echo "   Backend will deploy: $([ \"$DEPLOYMENT_TYPE\" = \"backend\" ] || [ \"$DEPLOYMENT_TYPE\" = \"full\" ] && echo 'Yes' || echo 'No')"
+            echo "   Frontend will deploy: $([ \"$DEPLOYMENT_TYPE\" = \"frontend\" ] || [ \"$DEPLOYMENT_TYPE\" = \"full\" ] && echo 'Yes' || echo 'No')"
+          else
+            echo "❌ Failed to trigger deployment (HTTP $HTTP_CODE)"
+            echo "Response: $BODY"
+            exit 1
+          fi
