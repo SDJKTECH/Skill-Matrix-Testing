@@ -1,0 +1,28 @@
+# Exception types for expected orchestrator failures.
+# They let the API and pipeline report problems clearly instead of crashing.
+class OrchestratorError(Exception):
+    """Base exception for expected orchestrator failures."""
+
+
+class ConfigurationError(OrchestratorError):
+    """Raised when required configuration is invalid."""
+
+
+class RepositoryError(OrchestratorError):
+    """Raised when a Git repository operation fails."""
+
+
+class AgentExecutionError(OrchestratorError):
+    """Raised when an agent cannot execute successfully."""
+
+
+class VerificationError(OrchestratorError):
+    """Raised when a verification operation fails."""
+
+
+class PlanningError(OrchestratorError):
+    """Raised when a requirement cannot be turned into Jira issues."""
+
+
+class IssueSourceError(OrchestratorError):
+    """Raised when GitHub issues cannot be retrieved."""
