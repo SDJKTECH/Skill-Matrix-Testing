@@ -14,6 +14,7 @@ from orchestrator.app.api.intake_routes import router as intake_router
 from orchestrator.app.api.project_routes import router as project_router
 from orchestrator.app.api.requirement_routes import router as requirement_router
 from orchestrator.app.api.stats_routes import router as stats_router
+from orchestrator.app.api.story_routes import router as story_router
 from orchestrator.app.api.task_routes import router as task_router
 from orchestrator.app.api.usage_routes import router as usage_router
 from orchestrator.app.api.verification_routes import router as verification_router
@@ -120,6 +121,7 @@ app.include_router(dashboard_router)
 app.include_router(project_router)
 app.include_router(intake_router)
 app.include_router(requirement_router)
+app.include_router(story_router)
 app.include_router(task_router)
 app.include_router(control_router)
 app.include_router(usage_router)
