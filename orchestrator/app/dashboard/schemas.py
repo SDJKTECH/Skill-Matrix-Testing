@@ -129,6 +129,18 @@ class StoryTaskView(BaseModel):
     jira_url: str | None = None
 
 
+class PlannedTask(BaseModel):
+    """What the story plan says about one sub-task (shown before the run starts)."""
+
+    key: str
+    files: list[str] = []
+    new_files: list[str] = []
+    depends_on: list[str] = []
+    parallel_safe: bool = True
+    complexity: str = ""
+    expected_outcome: str = ""
+
+
 class DashboardStory(BaseModel):
     """One story run: where it is, its sub-tasks, cost and pull request."""
 
@@ -145,6 +157,7 @@ class DashboardStory(BaseModel):
     pull_request_url: str | None = None
     branch: str | None = None
     concerns: list[str] = []
+    planned_tasks: list[PlannedTask] = []
     tasks: list[StoryTaskView] = []
     done: int = 0
     total: int = 0

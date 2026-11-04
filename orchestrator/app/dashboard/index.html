@@ -496,6 +496,20 @@
   .strow .num { color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: right; }
   .strow .meta { color: var(--ink-2); font-size: 12px; }
   .snotes { margin: 8px 0 0; padding-left: 18px; color: var(--ink-2); font-size: 12px; }
+  .jhead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 10px; }
+  .jhead h2 { font-size: 15px; margin: 0; flex: 1 1 auto; }
+  .jhead .meta { color: var(--ink-2); font-size: 12px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+  .actions button.go { border-color: var(--good); color: var(--good-text); font-weight: 600; }
+  .actions button.plan { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .errbox { border: 1px solid var(--critical); color: var(--critical); border-radius: 8px; padding: 8px 12px;
+            margin: 8px 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+  .okbox { border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; margin: 8px 0; color: var(--ink-2); font-size: 13px; }
+  .prow { display: grid; grid-template-columns: minmax(70px, auto) minmax(150px, 2fr) minmax(110px, 1.2fr) minmax(130px, 2fr) 60px;
+          gap: 4px 10px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 12px; align-items: start; }
+  .prow.headrow { color: var(--ink-3); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; border-top: 0; }
+  .prow .files { overflow-wrap: anywhere; color: var(--ink-2); }
+  .ac-yes { color: var(--good-text); } .ac-no { color: var(--critical); }
   .sfoot { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; color: var(--ink-2); font-size: 12px; }
 </style>
 </head>
@@ -597,6 +611,7 @@ const state = {
   open: new Set(), outputs: new Map(), failures: 0,
   view: "cards", query: "", drawer: null, seen: null, flash: new Set(),
   descriptions: new Map(), results: new Map(), loading: new Set(), opened: false,
+  jira: { stories: null, error: null, at: null }, busy: new Map(), storyErrors: new Map(),
   collapsed: new Set(), showOlder: false, activitySeen: null, activityAll: false, viewChosen: true, autoViewed: false,
 };
 
@@ -610,7 +625,7 @@ function el(tag, props, ...children) {
     else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
     else node.setAttribute(key, value === true ? "" : value);
   }
-  for (const child of children.flat()) {
+  for (const child of children.flat(Infinity)) {
     if (child === null || child === undefined || child === false) continue;
     node.append(child.nodeType ? child : document.createTextNode(String(child)));
   }
@@ -1692,48 +1707,171 @@ function storyRow(task) {
     el("span", { class: "num", text: fmtCost(task.cost_usd) }));
 }
 
+const RERUNNABLE = new Set(["failed", "cancelled", "checked"]);
+
+function runBody(story) {
+  const tone = storyTone(story);
+  const step = storyStep(story);
+  const percent = story.total ? Math.round((story.done / story.total) * 100) : 0;
+  return [
+    el("div", { class: "phase" },
+      tone === "live" ? el("span", { class: "pulse", "aria-hidden": "true" }) : null,
+      story.phase),
+    el("div", { class: "sflow", "aria-label": "Story progress" },
+      STORY_STEPS.map((name, index) =>
+        el("span", { class: "step-s" + (index < step || (index === 3 && step === 3) ? " done" : index === step ? " now" : ""),
+          text: name }))),
+    story.tasks.length
+      ? el("div", { class: "sbar", title: `${story.done} of ${story.total} merged` },
+          el("span", { style: `width:${percent}%` }))
+      : null,
+    story.tasks.map(storyRow),
+    story.concerns.length
+      ? el("ul", { class: "snotes" }, story.concerns.map((text) => el("li", { text }))) : null,
+    el("div", { class: "sfoot" },
+      story.pull_request_url ? el("span", {}, "Pull request: ", link(story.pull_request_url, story.pull_request_url)) : null,
+      story.branch ? el("span", { text: `Branch: ${story.branch}` }) : null,
+      story.doc_target ? el("span", { text: `Doc: ${story.doc_target}` }) : null,
+      el("span", { text: `Run #${story.run_id} · started ${new Date(parseTime(story.created_at)).toLocaleString()}` })),
+  ];
+}
+
+function planTable(run, jiraStory) {
+  const titles = new Map((jiraStory ? jiraStory.subtasks : []).map((t) => [t.key, t.summary]));
+  const rows = run.planned_tasks.map((task) => el("div", { class: "prow" },
+    el("span", { class: "skey", text: task.key }),
+    el("span", { text: titles.get(task.key) || "" }),
+    el("span", { class: "files", text: task.depends_on.length ? `waits for ${task.depends_on.join(", ")}` : (task.parallel_safe ? "can start at once" : "ordered") }),
+    el("span", { class: "files", text: [...task.files, ...task.new_files.map((f) => `${f} (new)`)].join(", ") || task.expected_outcome || "-" }),
+    el("span", { class: "num", text: task.complexity || "" })));
+  return [
+    el("div", { class: "okbox", text: "Plan ready. Check it, then press Start build. Nothing is built until you do." }),
+    el("div", { class: "prow headrow" }, el("span", { text: "Sub-task" }), el("span", { text: "Title" }),
+      el("span", { text: "Order" }), el("span", { text: "Files" }), el("span", { text: "Size" })),
+    rows,
+  ];
+}
+
+async function storyAction(key, action) {
+  if (state.busy.has(key)) return;
+  if (action === "run" && !confirm(
+    `Start building ${key}?\n\nThe builder, tester and reviewer agents will run on its sub-tasks. ` +
+    `This costs money and moves the sub-tasks' Jira statuses.`)) return;
+  state.busy.set(key, action);
+  state.storyErrors.delete(key);
+  renderStories(state.data);
+  try {
+    const response = await fetch(`/stories/${encodeURIComponent(key)}/${action}`, { method: "POST" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(typeof body.detail === "string" ? body.detail : (body.detail ? JSON.stringify(body.detail) : `HTTP ${response.status}`));
+    }
+    toast(action === "plan"
+      ? `${key} planned. Check the plan, then press Start build.`
+      : `${key} started: ${body.tasks.length} task(s) created.`, "info");
+  } catch (error) {
+    state.storyErrors.set(key, String(error.message || error));
+  } finally {
+    state.busy.delete(key);
+  }
+  await refresh();
+  loadJira(true);
+}
+
+function storyButtons(js, run) {
+  const busy = state.busy.get(js.key);
+  const status = run ? run.status : null;
+  const buttons = [];
+  const blocked = js.problems.length ? js.problems.join(" ") : null;
+
+  if (status === "planned") {
+    buttons.push(el("button", { type: "button", class: "go", disabled: Boolean(busy),
+      onclick: () => storyAction(js.key, "run"), text: busy === "run" ? "Starting…" : "Start build" }));
+  }
+  if (!status || status === "planned" || RERUNNABLE.has(status)) {
+    buttons.push(el("button", { type: "button", class: "plan", disabled: Boolean(busy) || Boolean(blocked),
+      title: blocked || "Check the Story and have the sequencer agent plan its sub-tasks",
+      onclick: () => storyAction(js.key, "plan"),
+      text: busy === "plan" ? "Planning… (1–2 min)" : (status === "planned" ? "Re-plan" : "Plan") }));
+  }
+  return buttons.length ? el("div", { class: "actions" }, buttons) : null;
+}
+
+function jiraStoryCard(js, run) {
+  const error = state.storyErrors.get(js.key);
+  const busy = state.busy.get(js.key);
+  const tone = run ? storyTone(run) : "";
+  const chipText = run ? run.status.replace("_", " ") : "not started";
+  return el("article", { class: `story ${tone === "live" ? "is-live" : tone === "bad" ? "is-bad" : ""}` },
+    el("div", { class: "story-head" },
+      el("span", { class: "skey" }, js.key),
+      el("span", { class: "stitle", text: js.summary }),
+      js.epic_key ? el("span", { class: "meta", text: `Epic ${js.epic_key}${js.epic_summary ? " · " + js.epic_summary : ""}` }) : null,
+      el("span", { class: `chip ${tone}`, text: chipText })),
+    busy === "plan" ? el("div", { class: "phase" }, el("span", { class: "pulse", "aria-hidden": "true" }),
+      "The sequencer agent is reading the code and planning. This takes a minute or two.") : null,
+    storyButtons(js, run),
+    error ? el("div", { class: "errbox", role: "alert", text: error }) : null,
+    !run && js.problems.length ? el("div", { class: "errbox", text: "Cannot be planned yet: " + js.problems.join(" ") }) : null,
+    run && run.status === "planned" ? planTable(run, js) : null,
+    run && run.status !== "planned" ? runBody(run) : null,
+    !run ? js.subtasks.map((t) => el("div", { class: "strow", style: "cursor:default" },
+      el("span", { class: "skey", text: t.key }),
+      el("span", { text: t.summary }),
+      el("span", { class: "meta", text: t.status }),
+      el("span", { class: t.has_criteria ? "ac-yes" : "ac-no", text: t.has_criteria ? "✓ criteria" : "✕ no criteria" }),
+      el("span"))) : null);
+}
+
+async function loadJira(force = false) {
+  try {
+    const response = await fetch(`/dashboard/jira-stories${force ? "?refresh=true" : ""}`, { cache: "no-store" });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(typeof body.detail === "string" ? body.detail : `HTTP ${response.status}`);
+    state.jira = { stories: body, error: null, at: new Date() };
+  } catch (error) {
+    state.jira = { stories: state.jira.stories, error: String(error.message || error), at: state.jira.at };
+  }
+  if (state.data) renderStories(state.data);
+}
+
 function renderStories(data) {
   const box = document.getElementById("stories");
-  const signature = JSON.stringify(data.stories);
+  const signature = JSON.stringify([data.stories, state.jira.stories, state.jira.error,
+    [...state.busy], [...state.storyErrors]]);
   if (box.dataset.signature === signature) return;
   box.dataset.signature = signature;
 
-  if (!data.stories.length) {
-    box.replaceChildren(el("div", { class: "empty", text:
-      "No story runs yet. Plan one with POST /stories/<KEY>/plan, then start it with POST /stories/<KEY>/run." }));
-    return;
-  }
+  const latest = new Map();
+  for (const run of data.stories) if (!latest.has(run.story_key)) latest.set(run.story_key, run);
+  const known = new Set((state.jira.stories || []).map((js) => js.key));
+  const parts = [
+    el("div", { class: "jhead" },
+      el("h2", { text: "Jira stories" }),
+      el("span", { class: "meta", text: state.jira.at ? `Jira read at ${state.jira.at.toLocaleTimeString()}` : "Reading Jira…" }),
+      el("button", { type: "button", onclick: () => loadJira(true), text: "Refresh from Jira" })),
+  ];
 
-  box.replaceChildren(...data.stories.map((story) => {
-    const tone = storyTone(story);
-    const step = storyStep(story);
-    const percent = story.total ? Math.round((story.done / story.total) * 100) : 0;
-    return el("article", { class: `story ${tone === "live" ? "is-live" : tone === "bad" ? "is-bad" : ""}` },
-      el("div", { class: "story-head" },
-        el("span", { class: "skey" }, story.jira_url ? link(story.jira_url, story.story_key) : story.story_key),
-        el("span", { class: "stitle", text: story.summary || "" }),
-        el("span", { class: `chip ${tone}`, text: story.status.replace("_", " ") }),
-        el("span", { class: "meta", text: fmtCost(story.cost_usd) })),
-      el("div", { class: "phase" },
-        tone === "live" ? el("span", { class: "pulse", "aria-hidden": "true" }) : null,
-        story.phase),
-      el("div", { class: "sflow", "aria-label": "Story progress" },
-        STORY_STEPS.map((name, index) =>
-          el("span", { class: "step-s" + (index < step || (index === 3 && step === 3) ? " done" : index === step ? " now" : ""),
-            text: name }))),
-      story.tasks.length
-        ? el("div", { class: "sbar", title: `${story.done} of ${story.total} merged` },
-            el("span", { style: `width:${percent}%` }))
-        : null,
-      story.tasks.map(storyRow),
-      story.concerns.length
-        ? el("ul", { class: "snotes" }, story.concerns.map((text) => el("li", { text }))) : null,
-      el("div", { class: "sfoot" },
-        story.pull_request_url ? el("span", {}, "Pull request: ", link(story.pull_request_url, story.pull_request_url)) : null,
-        story.branch ? el("span", { text: `Branch: ${story.branch}` }) : null,
-        story.doc_target ? el("span", { text: `Doc: ${story.doc_target}` }) : null,
-        el("span", { text: `Run #${story.run_id} · started ${new Date(parseTime(story.created_at)).toLocaleString()}` })));
-  }));
+  if (state.jira.error) parts.push(el("div", { class: "errbox", role: "alert", text: `Could not read Jira: ${state.jira.error}` }));
+  if (state.jira.stories && !state.jira.stories.length) {
+    parts.push(el("div", { class: "empty", text: "No Stories found in the Jira project." }));
+  }
+  for (const js of state.jira.stories || []) parts.push(jiraStoryCard(js, latest.get(js.key) || null));
+
+  // Runs for Stories the Jira list does not show (for example if Jira cannot be read).
+  const others = data.stories.filter((run, index) => !known.has(run.story_key) && latest.get(run.story_key) === run);
+  if (others.length) {
+    parts.push(el("div", { class: "jhead" }, el("h2", { text: "Other story runs" })));
+    for (const run of others) {
+      parts.push(el("article", { class: "story" },
+        el("div", { class: "story-head" },
+          el("span", { class: "skey", text: run.story_key }),
+          el("span", { class: "stitle", text: run.summary || "" }),
+          el("span", { class: "chip", text: run.status.replace("_", " ") })),
+        runBody(run)));
+    }
+  }
+  box.replaceChildren(...parts);
 }
 
 function renderWork(data, visible) {
@@ -1896,8 +2034,10 @@ function openFromHash() {
 }
 
 setInterval(tickDurations, 1000);
+setInterval(() => loadJira(false), 60000);
 setInterval(() => drawerRender(false), 5000);
 refresh();
+loadJira(true);
 schedule();
 </script>
 </body>

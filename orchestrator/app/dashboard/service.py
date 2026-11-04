@@ -1,5 +1,6 @@
 # Builds the dashboard overview from the database in one snapshot.
 # Works out each task's stage states, branches, usage and milestone totals.
+import json
 from datetime import UTC, datetime
 from functools import partial
 
@@ -19,6 +20,7 @@ from orchestrator.app.dashboard.schemas import (
     DashboardSummary,
     DashboardTask,
     HierarchyNode,
+    PlannedTask,
     RoleUsage,
     RunDetail,
     StageInfo,
@@ -451,6 +453,26 @@ def _story_phase(run: StoryRun, tasks: list[Task], merged: int) -> str:
     return f"Building: {merged} of {len(live)} merged, waiting for the next tasks"
 
 
+def _planned_tasks(run: StoryRun) -> list[PlannedTask]:
+    """The sub-tasks of a run's saved plan (empty if none or unreadable)."""
+    try:
+        tasks = json.loads(run.plan or "{}").get("tasks") or {}
+        return [
+            PlannedTask(
+                key=str(key),
+                files=[str(path) for path in data.get("files", [])],
+                new_files=[str(path) for path in data.get("new_files", [])],
+                depends_on=[str(dep) for dep in data.get("depends_on", [])],
+                parallel_safe=bool(data.get("parallel_safe", True)),
+                complexity=str(data.get("complexity", "")),
+                expected_outcome=str(data.get("expected_outcome", "")),
+            )
+            for key, data in tasks.items()
+        ]
+    except (ValueError, AttributeError, TypeError):
+        return []
+
+
 def _story_task(task: Task, branch: str | None) -> StoryTaskView:
     """The compact view of one sub-task of a story run."""
     session = object_session(task)
@@ -516,6 +538,7 @@ def _stories(session: Session, items: dict[str, JiraItem]) -> list[DashboardStor
                 pull_request_url=item.pull_request_url if item else None,
                 branch=branch,
                 concerns=[concern.text for concern in run.concerns],
+                planned_tasks=_planned_tasks(run) if run.status == "planned" else [],
                 tasks=views,
                 done=merged,
                 total=len(live),
