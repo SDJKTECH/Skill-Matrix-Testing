@@ -53,6 +53,7 @@ def create_task_endpoint(
             title=payload.title,
             description=payload.description,
             worktrees_root=Path(settings.repository_path).parent / "agent-worktrees",
+            base_branch=settings.base_branch,
         )
     except ValueError as exc:
         raise HTTPException(
@@ -152,6 +153,7 @@ def _build_pipeline(session: Session) -> PipelineService:
         code_root=settings.jira_code_root,
         tests_root=settings.jira_tests_root,
         stories=make_story_delivery(session, settings),
+        base_branch=settings.base_branch,
     )
 
 

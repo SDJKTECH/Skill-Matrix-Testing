@@ -143,6 +143,7 @@ def sync_jira_items(
     milestone_id: int,
     source: JiraItemSource,
     worktrees_root: Path,
+    base_branch: str = "main",
 ) -> JiraSyncResult:
     """Create a queued task (with worktree) for each Jira Task not yet imported.
 
@@ -189,6 +190,7 @@ def sync_jira_items(
                 title=work.title[:MAX_TITLE_LENGTH],
                 description=work.body[:MAX_DESCRIPTION_LENGTH],
                 worktrees_root=worktrees_root,
+                base_branch=base_branch,
                 jira_key=key,
                 jira_item_id=jira_item.id,
             )

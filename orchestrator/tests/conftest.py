@@ -18,6 +18,14 @@ from orchestrator.app.db.database import Base, get_db
 from orchestrator.app.db.models import Milestone, Project
 
 
+@pytest.fixture(autouse=True)
+def _isolate_from_local_env(monkeypatch):
+    """Keep a developer's .env (PROJECT, BASE_BRANCH) from leaking into tests."""
+    # Real environment variables outrank the .env file, so pin the workspace ones.
+    monkeypatch.setenv("PROJECT", "")
+    monkeypatch.setenv("BASE_BRANCH", "main")
+
+
 @pytest.fixture
 def routes_client():
     """A minimal app with every router, backed by an in-memory database."""

@@ -3,5 +3,5 @@
 
 # Issues and PRs go to the Skill Matrix Testing repo that holds this folder.
 github_repo = "SDJKTECH/Skill-Matrix-Testing"
-base_branch = "main"
+base_branch = "development"
 # jira_project = "SKILL"

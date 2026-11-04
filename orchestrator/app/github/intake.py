@@ -438,6 +438,7 @@ def sync_issues(
     milestone_id: int,
     source: IssueSource,
     worktrees_root: Path,
+    base_branch: str = "main",
 ) -> SyncResult:
     """Create a queued task (with worktree) for each issue not yet imported.
 
@@ -488,6 +489,7 @@ def sync_issues(
                 title=issue.title[:MAX_TITLE_LENGTH],
                 description=issue.body[:MAX_DESCRIPTION_LENGTH],
                 worktrees_root=worktrees_root,
+                base_branch=base_branch,
                 github_issue_number=issue.number,
                 project_item_id=issue.project_item_id,
                 board_number=issue.board_number,

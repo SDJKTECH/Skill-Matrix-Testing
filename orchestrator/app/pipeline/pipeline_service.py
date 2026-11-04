@@ -105,8 +105,10 @@ class PipelineService:
         code_root: str | None = None,
         tests_root: str | None = None,
         stories: StoryDelivery | None = None,
+        base_branch: str = "main",
     ) -> None:
         self.db = db
+        self.base_branch = base_branch
         self.code_root = code_root
         self.tests_root = tests_root
         self.control = control or process_control
@@ -193,7 +195,13 @@ class PipelineService:
             stage = self.agents.execute_stage(
                 task,
                 role,
-                self._build_prompt(task, role, problem if attempt > 1 else None, rule),
+                self._build_prompt(
+                    task,
+                    role,
+                    problem if attempt > 1 else None,
+                    rule,
+                    self.base_branch,
+                ),
                 worktree_path=workspace.worktree_path if workspace else None,
             )
 
@@ -341,6 +349,7 @@ class PipelineService:
         role: str,
         problem: str | None = None,
         rule: FolderRule | None = None,
+        base_branch: str = "main",
     ) -> str:
         """The instructions for an agent: the task, its role and any problem."""
         title = task.title.strip()
@@ -359,7 +368,7 @@ class PipelineService:
         if item is not None:
             base = story_branch_name(item)
         else:
-            base = "origin/main" if task.blocked_by else "main"
+            base = f"origin/{base_branch}" if task.blocked_by else base_branch
 
         if role == "builder" and problem:
             return (

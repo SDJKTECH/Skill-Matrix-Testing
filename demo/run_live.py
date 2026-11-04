@@ -95,16 +95,19 @@ def preflight(args) -> tuple[str, str, GitHubApi]:
     if repo is None:
         fail("cannot work out the GitHub repo from 'origin'; pass --repo owner/name.")
 
+    base = Settings(project=args.project).base_branch
     for role in REQUIRED_AGENTS:
-        if run(["git", "cat-file", "-e", f"main:.claude/agents/{role}.md"]).returncode:
-            fail(f"local main is missing .claude/agents/{role}.md (commit it).")
+        if run(
+            ["git", "cat-file", "-e", f"{base}:.claude/agents/{role}.md"]
+        ).returncode:
+            fail(f"local {base} lacks .claude/agents/{role}.md (commit it).")
 
-    run(["git", "fetch", "origin", "main"])
-    ahead = run(["git", "rev-list", "--count", "origin/main..main"])
+    run(["git", "fetch", "origin", base])
+    ahead = run(["git", "rev-list", "--count", f"origin/{base}..{base}"])
     if ahead.returncode == 0 and ahead.stdout.strip() != "0":
         fail(
-            f"local main is {ahead.stdout.strip()} commit(s) ahead of origin/main. "
-            "Agents branch from local main, so push it first."
+            f"local {base} is {ahead.stdout.strip()} commit(s) ahead of origin/{base}. "
+            f"Agents branch from local {base}, so push it first."
         )
 
     api = GitHubApi(repo, load_token())

@@ -209,3 +209,15 @@ def test_jira_modules_use_github_only_for_the_pull_request_client() -> None:
     assert github_lines == [
         "from orchestrator.app.github.client import GitHubApi, detect_github_repo"
     ]
+
+
+def test_a_fixing_builder_diffs_against_the_configured_base_branch(session) -> None:
+    prompt = PipelineService._build_prompt(
+        jira_task(session, with_item=False),
+        "builder",
+        "tests fail",
+        base_branch="development",
+    )
+
+    assert "development...HEAD" in prompt
+    assert "main...HEAD" not in prompt

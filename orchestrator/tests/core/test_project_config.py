@@ -16,13 +16,13 @@ def make_project(root: Path, name: str, config: str | None) -> Path:
 
 def test_project_config_fills_settings(tmp_path: Path) -> None:
     make_project(
-        tmp_path, "demo", 'github_repo = "acme/demo"\nbase_branch = "develop"\n'
+        tmp_path, "demo", 'github_repo = "acme/demo"\ngit_remote = "upstream"\n'
     )
 
     settings = Settings(_env_file=None, repository_path=tmp_path, project="demo")
 
     assert settings.github_repo == "acme/demo"
-    assert settings.base_branch == "develop"
+    assert settings.git_remote == "upstream"
     assert settings.project_subdir == "projects/demo"
 
 

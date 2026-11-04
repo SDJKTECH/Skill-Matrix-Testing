@@ -148,3 +148,28 @@ def test_create_task_rolls_back_if_worktree_creation_fails(task_environment):
 
         tasks = session.scalars(select(Task)).all()
         assert tasks == []
+
+
+def test_create_task_cuts_the_worktree_from_the_given_base_branch(task_environment):
+    test_session, milestone_id, repository, worktrees_root = task_environment
+    subprocess.run(
+        ["git", "-C", str(repository), "checkout", "-q", "-b", "development"],
+        check=True,
+    )
+    (repository / "only_on_development.txt").write_text("x\n", encoding="utf-8")
+    subprocess.run(["git", "-C", str(repository), "add", "-A"], check=True)
+    subprocess.run(
+        ["git", "-C", str(repository), "commit", "-q", "-m", "dev only"], check=True
+    )
+    subprocess.run(["git", "-C", str(repository), "checkout", "-q", "main"], check=True)
+
+    with test_session() as session:
+        task = create_task(
+            session=session,
+            milestone_id=milestone_id,
+            title="Cut from development",
+            worktrees_root=worktrees_root,
+            base_branch="development",
+        )
+
+        assert (worktrees_root / f"task-{task.id}" / "only_on_development.txt").exists()

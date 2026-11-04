@@ -90,6 +90,7 @@ class IntakePoller:
                 milestone_id=milestone_id,
                 source=source,
                 worktrees_root=self.repository_path.parent / "agent-worktrees",
+                base_branch=self.settings.base_branch,
             )
 
             for task in result.imported:

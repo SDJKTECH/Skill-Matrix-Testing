@@ -46,6 +46,13 @@ Note: projects are folders of this repository, not separate git repos. Worktrees
 branches and pull requests are made in *this* repo, so `github_repo` in a project's config
 should normally be this repository.
 
+### Branch policy
+
+For now all work happens on `development`, not `main`: set `BASE_BRANCH=development`
+(already the value in each project's config). Agent branches (`agent/task-N`) are cut
+from `development` and pull requests target `development`. The orchestrator never merges.
+`main` only holds the initial orchestrator import and is not used.
+
 ### Run the orchestrator against a project
 
 ```bash

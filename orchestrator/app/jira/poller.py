@@ -112,6 +112,7 @@ class JiraPoller:
                     milestone_id=milestone_id,
                     source=source,
                     worktrees_root=self.repository_path.parent / "agent-worktrees",
+                    base_branch=self.settings.base_branch,
                 )
 
             edges = self._plan(session, result.imported, result.links)
