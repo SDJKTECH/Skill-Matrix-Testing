@@ -82,9 +82,9 @@ Each step is finished and tested before the next one starts. Tests go in `orches
   - `docs_dir` exists and `CLAUDE.md` mentions it.
   - The story has sub-tasks.
   - Every sub-task has acceptance criteria.
-  - `test_command` passes on the base branch (run in a temporary worktree of `development`).
 - **Files:** a new `planning/story_checks.py`.
-- **Why:** if the tests already fail on the base branch, every tester fails and the retries are wasted. These checks cost nothing.
+- **Not included:** running the project's tests on the base branch before planning. That would execute the existing project code, which we do not do; tests run only when agents implement new code from Jira tasks.
+- **Why:** these checks only read files and Jira, so they cost nothing and stop a bad run before any agent is called. All problems are reported together.
 - **Done when:** each failed check stops the run with a clear message, before any agent is called.
 
 ### Step 5: Story sequencer (planner)
@@ -166,4 +166,4 @@ Each step is finished and tested before the next one starts. Tests go in `orches
 ## Open decisions
 1. **Trigger:** the plan adds an explicit story-key trigger and makes polling skip a story's sub-tasks. Recommended. The alternative is to keep polling and apply the new checks to every Story it finds.
 2. **Jira writes:** keep today's status and comment updates (recommended), or make story runs read-only.
-3. **Test command location:** `test_command` runs in a temporary worktree of `development`. The project's dependencies for skill-matrix-v2 must be installed for it to pass.
+3. **Decided: no test run on the base branch.** Tests and the verification gate run only while agents implement Jira tasks, never proactively on the existing skill-matrix-v2 code. The full orchestrator suite runs once, after the last step.
