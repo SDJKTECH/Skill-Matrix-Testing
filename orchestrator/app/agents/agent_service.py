@@ -76,6 +76,7 @@ class AgentService:
             test_command=getattr(self.settings, "test_command", None),
             lint_command=getattr(self.settings, "lint_command", None),
             project_subdir=getattr(self.settings, "project_subdir", None),
+            base_branch=getattr(self.settings, "base_branch", "main"),
         )
 
     def run_task(
