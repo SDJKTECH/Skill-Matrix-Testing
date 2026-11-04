@@ -145,6 +145,10 @@ class Settings(BaseSettings):
     jira_code_root: str = "orchestrator/examples"
     jira_tests_root: str = "orchestrator/tests/examples"
 
+    # Story runs: when on, the Jira poller leaves Tasks that sit under a Story alone;
+    # they are imported only by a story run (POST /stories/{key}/run).
+    story_mode: bool = False
+
     # Work out which tasks depend on each other (Jira only): a task that needs
     # another's code waits until that task's pull request is merged.
     plan_dependencies: bool = True

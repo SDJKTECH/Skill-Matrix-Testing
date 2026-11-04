@@ -66,6 +66,28 @@ def jira_project(session: Session, template: Project, name: str) -> Project:
     return project
 
 
+def ensure_repository_milestone(
+    session: Session, repository_path: Path, repository_url: str | None
+) -> int:
+    """The default milestone of the project for this repository clone, made if needed.
+
+    Imported Tasks that belong to no Jira project of their own join this project.
+    """
+    name = repository_path.name
+    project = session.scalar(select(Project).where(Project.name == name))
+
+    if project is None:
+        project = Project(
+            name=name, local_path=str(repository_path), repository_url=repository_url
+        )
+        session.add(project)
+        session.flush()
+
+    milestone_id = default_milestone(session, project.id)
+    session.commit()
+    return milestone_id
+
+
 def default_milestone(session: Session, project_id: int) -> int:
     """The milestone for a project's Tasks that have no fix version."""
     milestone = session.scalar(
@@ -144,12 +166,15 @@ def sync_jira_items(
     source: JiraItemSource,
     worktrees_root: Path,
     base_branch: str = "main",
+    skip_story_children: bool = False,
 ) -> JiraSyncResult:
     """Create a queued task (with worktree) for each Jira Task not yet imported.
 
     Tasks go to a project named after their Jira project, and into the milestone
     named like their fix version (else the project's default one). Their Story and
     Epic are saved as JiraItems and linked, outermost first.
+
+    With `skip_story_children`, Tasks that sit under a Story are left to story runs.
     """
     items = source.list_items()
     default = session.get(Milestone, milestone_id)
@@ -162,7 +187,10 @@ def sync_jira_items(
     for work in items:
         key = work.record.key
 
-        if key in known:
+        if key in known or (
+            skip_story_children
+            and any(record.type.casefold() == "story" for record in work.ancestors)
+        ):
             result.skipped.append(key)
             continue
 

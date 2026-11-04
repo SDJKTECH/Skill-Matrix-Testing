@@ -17,7 +17,7 @@ from orchestrator.app.jira.columns import BLOCKED, QUEUED
 from orchestrator.app.jira.creator import creation_lock
 from orchestrator.app.jira.importer import (
     JiraItemSource,
-    default_milestone,
+    ensure_repository_milestone,
     sync_jira_items,
 )
 from orchestrator.app.jira.source import check_skip_types, make_jira_source
@@ -113,6 +113,7 @@ class JiraPoller:
                     source=source,
                     worktrees_root=worktrees_root(self.settings),
                     base_branch=self.settings.base_branch,
+                    skip_story_children=getattr(self.settings, "story_mode", False),
                 )
 
             edges = self._plan(session, result.imported, result.links)
@@ -207,18 +208,6 @@ class JiraPoller:
 
     def _ensure_milestone(self, session: Session) -> int:
         """Find or create the project and milestone that imported tasks join."""
-        project_name = self.repository_path.name
-        project = session.scalar(select(Project).where(Project.name == project_name))
-
-        if project is None:
-            project = Project(
-                name=project_name,
-                local_path=str(self.repository_path),
-                repository_url=self.settings.github_repo,
-            )
-            session.add(project)
-            session.flush()
-
-        milestone_id = default_milestone(session, project.id)
-        session.commit()
-        return milestone_id
+        return ensure_repository_milestone(
+            session, self.repository_path, self.settings.github_repo
+        )

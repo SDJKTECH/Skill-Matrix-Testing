@@ -25,6 +25,7 @@ def _isolate_from_local_env(monkeypatch):
     monkeypatch.setenv("PROJECT", "")
     monkeypatch.setenv("BASE_BRANCH", "main")
     monkeypatch.setenv("WORKTREES_DIR", "")
+    monkeypatch.setenv("STORY_MODE", "false")
 
 
 @pytest.fixture

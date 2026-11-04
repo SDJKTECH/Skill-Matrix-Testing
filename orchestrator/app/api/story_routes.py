@@ -6,9 +6,15 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from orchestrator.app.core.config import Settings, get_settings
-from orchestrator.app.core.exceptions import IssueSourceError, PlanningError
+from orchestrator.app.core.exceptions import (
+    IssueSourceError,
+    PlanningError,
+    RepositoryError,
+)
 from orchestrator.app.db.database import get_db
 from orchestrator.app.jira.client import JiraApi, make_jira_api
+from orchestrator.app.jira.story_run import latest_planned_run, start_story_run
+from orchestrator.app.planning.dependencies import get_blockers
 from orchestrator.app.planning.story_planner import StorySequencer
 from orchestrator.app.planning.story_service import plan_story
 
@@ -94,4 +100,68 @@ def plan_story_endpoint(
         doc_target=plan.doc_target,
         concerns=plan.concerns,
         tasks=[StoryTaskResponse(**task.__dict__) for task in plan.tasks],
+    )
+
+
+class StartedTaskResponse(BaseModel):
+    """A task created for a sub-task."""
+
+    key: str
+    task_id: int
+    status: str
+    blocked_by: list[int]
+
+
+class StoryRunResponse(BaseModel):
+    """A started story run and the tasks it created."""
+
+    run_id: int
+    story_key: str
+    status: str
+    tasks: list[StartedTaskResponse]
+    failed: dict[str, str]
+
+
+@router.post("/stories/{story_key}/run", response_model=StoryRunResponse)
+def run_story_endpoint(
+    story_key: str,
+    session: Session = Depends(get_db),
+    settings: Settings = Depends(get_story_settings),
+    api: JiraApi = Depends(get_story_jira_api),
+) -> StoryRunResponse:
+    """Start the latest planned run of a Story: create one task per sub-task.
+
+    The polling orchestrator then schedules the queued tasks; blocked ones wait.
+    """
+    run = latest_planned_run(session, story_key)
+
+    if run is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No planned run for {story_key}. POST /stories/{story_key}/plan.",
+        )
+
+    try:
+        started = start_story_run(session, settings, api, run)
+    except IssueSourceError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
+        ) from exc
+    except (PlanningError, RepositoryError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return StoryRunResponse(
+        run_id=run.id,
+        story_key=run.story_key,
+        status=run.status,
+        tasks=[
+            StartedTaskResponse(
+                key=task.jira_key or "",
+                task_id=task.id,
+                status=task.status.value,
+                blocked_by=[entry["task_id"] for entry in get_blockers(task)],
+            )
+            for task in started.tasks
+        ],
+        failed=started.failed,
     )
