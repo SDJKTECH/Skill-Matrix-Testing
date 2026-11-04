@@ -1,9 +1,13 @@
 # Tells the agents where a task sits in its Jira hierarchy (Epic > Story > Task).
 # Read from the task's JiraItem; a task without one, or without parents, gets nothing.
+import json
+
 from orchestrator.app.db.models import Task
 from orchestrator.app.jira.models import JiraItem
 
 MAX_PARENT_DESCRIPTION_CHARS = 1500
+MAX_PLAN_NOTES_CHARS = 1500
+MAX_PLAN_FILES = 40
 
 
 def _ancestors(task: Task) -> list[JiraItem]:
@@ -33,6 +37,49 @@ def describe_hierarchy(task: Task) -> str:
         parts.append(f"{_name(item)}\n{description or '(no description)'}\n")
 
     return "\n".join(parts)
+
+
+def describe_plan(task: Task) -> str:
+    """Prompt text from the story plan (size, files, expected outcome, notes).
+
+    Empty for a task that no story run planned.
+    """
+    lines: list[str] = []
+
+    if task.expected_outcome:
+        lines.append(f"Expected outcome: {task.expected_outcome.strip()}")
+
+    files = _plan_files(task)
+    if files:
+        lines.append("Files it is expected to touch: " + ", ".join(files))
+
+    if task.complexity:
+        lines.append(f"Estimated size: {task.complexity}")
+
+    if task.context_notes:
+        lines.append(f"Notes: {task.context_notes.strip()[:MAX_PLAN_NOTES_CHARS]}")
+
+    if not lines:
+        return ""
+
+    return (
+        "The story plan says this about the task. It is guidance from a planner "
+        "that read the code, not a limit; the task text and acceptance criteria "
+        "above come first.\n" + "\n".join(lines) + "\n"
+    )
+
+
+def _plan_files(task: Task) -> list[str]:
+    """The files the plan names for the task (empty if unset or unreadable)."""
+    try:
+        files = json.loads(task.files or "[]")
+    except json.JSONDecodeError:
+        return []
+
+    if not isinstance(files, list):
+        return []
+
+    return [str(path) for path in files][:MAX_PLAN_FILES]
 
 
 def summarize_hierarchy(task: Task) -> str:

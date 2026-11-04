@@ -10,7 +10,11 @@ from orchestrator.app.db.database import Base
 from orchestrator.app.db.models import Milestone, Project, Task, TaskStatus
 from orchestrator.app.jira import context, merged, messages, tracker
 from orchestrator.app.jira.columns import PR_OPEN
-from orchestrator.app.jira.context import describe_hierarchy, summarize_hierarchy
+from orchestrator.app.jira.context import (
+    describe_hierarchy,
+    describe_plan,
+    summarize_hierarchy,
+)
 from orchestrator.app.jira.models import JiraItem
 from orchestrator.app.pipeline.pipeline_service import PipelineService
 from orchestrator.app.planning.planner import build_prompt
@@ -221,3 +225,66 @@ def test_a_fixing_builder_diffs_against_the_configured_base_branch(session) -> N
 
     assert "development...HEAD" in prompt
     assert "main...HEAD" not in prompt
+
+
+def planned_task(session, **plan) -> Task:
+    task = jira_task(session)
+    for name, value in plan.items():
+        setattr(task, name, value)
+    session.commit()
+    return task
+
+
+@pytest.mark.parametrize("role", ["builder", "tester", "reviewer"])
+def test_every_agent_prompt_carries_the_story_plan(session, role) -> None:
+    task = planned_task(
+        session,
+        expected_outcome="Walls are drawn",
+        files='["game/board.py", "game/walls.py"]',
+        complexity="small",
+        context_notes="Reuse draw_cell.",
+    )
+
+    prompt = PipelineService._build_prompt(task, role)
+
+    assert "Expected outcome: Walls are drawn" in prompt
+    assert "Files it is expected to touch: game/board.py, game/walls.py" in prompt
+    assert "Estimated size: small" in prompt
+    assert "Notes: Reuse draw_cell." in prompt
+    assert prompt.index("Draw the walls.") < prompt.index("Expected outcome")
+
+
+def test_the_plan_comes_after_the_parents(session) -> None:
+    task = planned_task(session, context_notes="Be careful.")
+
+    prompt = PipelineService._build_prompt(task, "builder")
+
+    assert prompt.index("Walls the snake must avoid") < prompt.index(
+        "Notes: Be careful"
+    )
+
+
+def test_an_unplanned_task_gets_no_plan_block(session) -> None:
+    assert describe_plan(jira_task(session)) == ""
+    assert "story plan" not in PipelineService._build_prompt(
+        jira_task(session), "builder"
+    )
+
+
+def test_bad_plan_files_are_ignored_and_notes_are_cut(session) -> None:
+    task = planned_task(session, files="not json", context_notes="n" * 5000)
+
+    text = describe_plan(task)
+
+    assert "Files it is expected" not in text
+    assert "n" * context.MAX_PLAN_NOTES_CHARS in text
+    assert "n" * (context.MAX_PLAN_NOTES_CHARS + 1) not in text
+
+
+def test_a_fixing_builder_also_sees_the_plan(session) -> None:
+    task = planned_task(session, expected_outcome="Walls are drawn")
+
+    prompt = PipelineService._build_prompt(task, "builder", "tests fail")
+
+    assert "Expected outcome: Walls are drawn" in prompt
+    assert "tests fail" in prompt

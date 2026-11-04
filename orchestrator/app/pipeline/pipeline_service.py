@@ -22,7 +22,7 @@ from orchestrator.app.github.projects import (
     TESTING,
 )
 from orchestrator.app.github.publisher import PullRequestPublisher
-from orchestrator.app.jira.context import describe_hierarchy
+from orchestrator.app.jira.context import describe_hierarchy, describe_plan
 from orchestrator.app.jira.stories import (
     Delivery,
     StoryDelivery,
@@ -360,6 +360,9 @@ class PipelineService:
         parents = describe_hierarchy(task)
         if parents:
             header += parents + "\n"
+        plan = describe_plan(task)
+        if plan:
+            header += plan + "\n"
         if rule is not None:
             header += f"Where to put files: {rule.describe()}\n\n"
         # A task that waited for others was cut from the merged origin/main, which
