@@ -14,9 +14,10 @@ from sqlalchemy.orm import Session
 
 from orchestrator.app.core.config import Settings, get_settings
 from orchestrator.app.core.exceptions import OrchestratorError
-from orchestrator.app.db.models import Task, TaskStatus
+from orchestrator.app.db.models import StoryRun, Task, TaskStatus
 from orchestrator.app.github.publisher import PullRequestPublisher, make_publisher
 from orchestrator.app.jira.client import JiraApi, make_jira_api
+from orchestrator.app.jira.documenter import DocResult, StoryDocumenter, story_changes
 from orchestrator.app.jira.models import JiraItem
 from orchestrator.app.vcs.git_manager import (
     conflicted_files,
@@ -229,7 +230,9 @@ class StoryDelivery:
         remote: str = "origin",
         publish: bool = False,
         open_children: OpenChildren | None = None,
+        documenter: StoryDocumenter | None = None,
     ) -> None:
+        self.documenter = documenter
         self.db = db
         self.publisher = publisher
         self.base_branch = base_branch
@@ -339,10 +342,50 @@ class StoryDelivery:
             "Story's earlier work are kept, and remove all markers."
         )
 
+    def _document(self, item: JiraItem, task: Task, branch: str) -> None:
+        """Have the documenter write the Story's feature doc, if a story run asks.
+
+        Only Stories started by a story run are documented. A failure marks the
+        run "needs_review" and never stops the pull request from opening.
+        """
+        run = self.db.scalar(
+            select(StoryRun)
+            .where(StoryRun.story_key == item.key, StoryRun.status == "running")
+            .order_by(StoryRun.id.desc())
+        )
+
+        if self.documenter is None or run is None:
+            return
+
+        try:
+            worktree = ensure_branch_worktree(
+                _repository(task),
+                Path(task.worktree_path or "").parent,
+                story_name(item),
+                self.base_branch,
+            )
+            result = self.documenter.write(
+                worktree,
+                f"{item.key}: {item.summary}\n{item.description or ''}",
+                run.doc_target or "",
+                story_changes(worktree, self.remote, self.base_branch),
+            )
+            if result.ok and self.publish:
+                push_branch(worktree, branch, self.remote)
+        except OrchestratorError as exc:
+            logger.error("Documenting Story %s failed: %s", item.key, exc)
+            result = DocResult(False, [str(exc)], [])
+
+        run.status = "documented" if result.ok else "needs_review"
+        self.db.commit()
+        logger.info("Story documented: story=%s ok=%s", item.key, result.ok)
+
     def _open_pull_request(self, item: JiraItem, task: Task, branch: str) -> None:
         """Open the Story's pull request and show it on each of its tasks."""
         if self.publisher is None:
             return
+
+        self._document(item, task, branch)
 
         url = self.publisher.open_pull_request(
             task,
@@ -381,6 +424,7 @@ def make_story_delivery(db: Session, settings: Settings) -> StoryDelivery:
         remote=settings.git_remote,
         publish=settings.publish_branches,
         open_children=open_children,
+        documenter=StoryDocumenter(settings) if settings.docs_dir else None,
     )
 
 

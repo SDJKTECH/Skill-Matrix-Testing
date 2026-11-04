@@ -8,7 +8,14 @@ from sqlalchemy.orm import sessionmaker
 
 from orchestrator.app.db.database import Base
 from orchestrator.app.db.migrations import migrate_jira_item_columns
-from orchestrator.app.db.models import Milestone, Project, Task, TaskStatus
+from orchestrator.app.db.models import (
+    Milestone,
+    Project,
+    StoryRun,
+    Task,
+    TaskStatus,
+)
+from orchestrator.app.jira.documenter import DocResult
 from orchestrator.app.jira.importer import sync_jira_items
 from orchestrator.app.jira.merged import sync_merged_stories
 from orchestrator.app.jira.stories import (
@@ -357,3 +364,62 @@ def test_nothing_is_retried_when_pull_requests_are_off(env) -> None:
     settings = SimpleNamespace(publish_branches=False, open_pull_request=False)
 
     assert open_pending_pull_requests(session, settings) == []
+
+
+class FakeDocumenter:
+    def __init__(self, ok=True):
+        self.ok, self.calls = ok, []
+
+    def write(self, worktree, story_text, doc_target, changed_files):
+        self.calls.append((worktree, story_text, doc_target, changed_files))
+        return DocResult(self.ok, [] if self.ok else ["bad"], [])
+
+
+def deliver_story(env, documenter, status="running"):
+    session, *_ = env
+    (task,) = story_tasks(env, "SG-3")
+    if status:
+        session.add(StoryRun(story_key="SG-2", status=status, doc_target="docs/x.md"))
+        session.commit()
+    build(task, "engine.py")
+    publisher = FakePublisher()
+    delivery = StoryDelivery(session, publisher, documenter=documenter)
+    delivery.deliver(task, story_item(task))
+    return session, publisher
+
+
+def test_a_documented_story_is_marked_and_its_pull_request_opens(env) -> None:
+    documenter = FakeDocumenter()
+
+    session, publisher = deliver_story(env, documenter)
+
+    worktree, text, target, changed = documenter.calls[0]
+    assert worktree.name == "story-sg-2" and target == "docs/x.md"
+    assert text.startswith("SG-2: Obstacles") and "engine.py" in changed
+    assert session.scalar(select(StoryRun)).status == "documented"
+    assert len(publisher.calls) == 1
+
+
+def test_a_failed_document_marks_needs_review_but_still_opens_the_pull_request(
+    env,
+) -> None:
+    session, publisher = deliver_story(env, FakeDocumenter(ok=False))
+
+    assert session.scalar(select(StoryRun)).status == "needs_review"
+    assert len(publisher.calls) == 1
+
+
+def test_a_story_without_a_story_run_is_not_documented(env) -> None:
+    documenter = FakeDocumenter()
+
+    _, publisher = deliver_story(env, documenter, status=None)
+
+    assert documenter.calls == [] and len(publisher.calls) == 1
+
+
+def test_a_story_run_that_is_already_documented_is_not_documented_again(env) -> None:
+    documenter = FakeDocumenter()
+
+    deliver_story(env, documenter, status="documented")
+
+    assert documenter.calls == []

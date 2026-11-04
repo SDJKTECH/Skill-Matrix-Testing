@@ -363,6 +363,32 @@ def changed_paths(worktree_path: Path) -> list[str]:
     return sorted({*tracked.splitlines(), *untracked.splitlines()} - {""})
 
 
+def discard_changes(worktree_path: Path) -> None:
+    """Throw away every uncommitted change, including new files, in a worktree.
+
+    Callers must have checked that the worktree held nothing of value before.
+    """
+    _run_git(worktree_path, "reset", "--hard", "HEAD")
+    _run_git(worktree_path, "clean", "-fd")
+
+
+def files_changed_since(worktree_path: Path, base: str) -> list[str]:
+    """Files the worktree's branch changed compared with `base` (a branch name)."""
+    if not re.fullmatch(r"[A-Za-z0-9._/-]+", base) or base.startswith("-"):
+        raise RepositoryError(f"Invalid branch name: {base}")
+
+    names = _run_git(
+        worktree_path,
+        "-c",
+        "core.quotepath=false",
+        "diff",
+        "--name-only",
+        "--no-renames",
+        f"{base}...HEAD",
+    )
+    return sorted(name for name in names.splitlines() if name)
+
+
 def push_branch(worktree_path: Path, branch: str, remote: str = "origin") -> None:
     """Push a branch and set its upstream."""
     for value in (branch, remote):
