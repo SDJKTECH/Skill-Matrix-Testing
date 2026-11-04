@@ -1,7 +1,6 @@
 # HTTP endpoints to create, list, inspect, run and start pipelines for tasks.
 # Runs the builder/tester/reviewer pipeline in the background and reports back.
 import logging
-from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -12,7 +11,7 @@ from orchestrator.app.agents.agent_service import AgentService
 from orchestrator.app.agents.process_control import process_control
 from orchestrator.app.api.schemas import TaskCreate, TaskDetailResponse, TaskResponse
 from orchestrator.app.boards import make_board
-from orchestrator.app.core.config import get_settings
+from orchestrator.app.core.config import get_settings, worktrees_root
 from orchestrator.app.core.exceptions import RepositoryError
 from orchestrator.app.db.database import SessionLocal, get_db
 from orchestrator.app.db.models import Task, TaskStatus
@@ -52,7 +51,7 @@ def create_task_endpoint(
             milestone_id=payload.milestone_id,
             title=payload.title,
             description=payload.description,
-            worktrees_root=Path(settings.repository_path).parent / "agent-worktrees",
+            worktrees_root=worktrees_root(settings),
             base_branch=settings.base_branch,
         )
     except ValueError as exc:

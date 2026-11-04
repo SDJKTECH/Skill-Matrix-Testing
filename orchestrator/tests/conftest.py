@@ -24,6 +24,7 @@ def _isolate_from_local_env(monkeypatch):
     # Real environment variables outrank the .env file, so pin the workspace ones.
     monkeypatch.setenv("PROJECT", "")
     monkeypatch.setenv("BASE_BRANCH", "main")
+    monkeypatch.setenv("WORKTREES_DIR", "")
 
 
 @pytest.fixture

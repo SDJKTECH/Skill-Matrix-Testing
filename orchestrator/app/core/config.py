@@ -38,6 +38,8 @@ class Settings(BaseSettings):
 
     # Repository and Claude Code execution settings
     repository_path: Path | None = None
+    # Where task worktrees are created. Empty = <repository_path>/../agent-worktrees.
+    worktrees_dir: str | None = None
     claude_command: str = "claude"
     # Headless agents cannot answer permission prompts, so they must be told
     # what they may do. acceptEdits allows file edits inside the worktree; the
@@ -180,6 +182,14 @@ class Settings(BaseSettings):
 
         self.project_subdir = folder.relative_to(root.resolve()).as_posix()
         return self
+
+
+def worktrees_root(settings: object) -> Path:
+    """The folder that holds the task worktrees."""
+    configured = getattr(settings, "worktrees_dir", None)
+    if configured:
+        return Path(configured)
+    return Path(settings.repository_path).parent / "agent-worktrees"  # type: ignore[attr-defined]
 
 
 @lru_cache

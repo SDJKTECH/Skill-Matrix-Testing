@@ -9,7 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from orchestrator.app.agents.execution_manager import ExecutionManager
-from orchestrator.app.core.config import Settings
+from orchestrator.app.core.config import Settings, worktrees_root
 from orchestrator.app.db.models import Milestone, Project, Task, TaskStatus
 from orchestrator.app.github.board_reporter import TaskBoard
 from orchestrator.app.github.intake import (
@@ -89,7 +89,7 @@ class IntakePoller:
                 session=session,
                 milestone_id=milestone_id,
                 source=source,
-                worktrees_root=self.repository_path.parent / "agent-worktrees",
+                worktrees_root=worktrees_root(self.settings),
                 base_branch=self.settings.base_branch,
             )
 

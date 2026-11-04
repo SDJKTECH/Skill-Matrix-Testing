@@ -1,12 +1,11 @@
 # HTTP endpoint that imports open GitHub issues (or Jira Tasks) as queued tasks.
 # Issues already imported are skipped, so calling it repeatedly is safe.
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from orchestrator.app.api.schemas import SyncResponse
-from orchestrator.app.core.config import get_settings
+from orchestrator.app.core.config import get_settings, worktrees_root
 from orchestrator.app.core.exceptions import IssueSourceError
 from orchestrator.app.db.database import get_db
 from orchestrator.app.db.models import Milestone
@@ -58,14 +57,14 @@ def sync_milestone_issues_endpoint(
         )
 
     try:
-        worktrees_root = Path(settings.repository_path).parent / "agent-worktrees"
+        root = worktrees_root(settings)
 
         if settings.issue_source == "jira":
             result = sync_jira_items(
                 session,
                 milestone_id,
                 source,
-                worktrees_root,
+                root,
                 base_branch=settings.base_branch,
             )
         else:
@@ -73,7 +72,7 @@ def sync_milestone_issues_endpoint(
                 session=session,
                 milestone_id=milestone_id,
                 source=source,
-                worktrees_root=worktrees_root,
+                worktrees_root=root,
                 base_branch=settings.base_branch,
             )
     except IssueSourceError as exc:

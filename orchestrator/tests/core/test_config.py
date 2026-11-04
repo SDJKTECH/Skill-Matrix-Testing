@@ -52,3 +52,23 @@ def test_model_and_effort_environment_variables_override_defaults(
 def test_invalid_default_effort_is_rejected() -> None:
     with pytest.raises(ValidationError):
         Settings(_env_file=None, default_effort="invalid")
+
+
+def test_worktrees_root_defaults_next_to_the_repository(tmp_path) -> None:
+    from orchestrator.app.core.config import worktrees_root
+
+    settings = Settings(_env_file=None, repository_path=tmp_path / "repo")
+
+    assert worktrees_root(settings) == tmp_path / "agent-worktrees"
+
+
+def test_worktrees_dir_overrides_the_default(tmp_path) -> None:
+    from orchestrator.app.core.config import worktrees_root
+
+    settings = Settings(
+        _env_file=None,
+        repository_path=tmp_path / "repo",
+        worktrees_dir=str(tmp_path / "mine"),
+    )
+
+    assert worktrees_root(settings) == tmp_path / "mine"
