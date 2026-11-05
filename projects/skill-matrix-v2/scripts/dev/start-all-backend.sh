@@ -87,6 +87,7 @@ FUNCTIONS=(
     "update_manager_email_v2|backend/employee/update_manager_email_v2|8091|employee"
     "upload_cv_v2|backend/employee/uploadCv_v2|8092|employee"
     "get_employee_skills_info|backend/employee/getEmployeeSkillsInfo_v2|8093|employee"
+    "get_emp_training_course_v2|backend/employee/getEmpTrainingCourse_v2|8094|employee"
     # Certificates
     "get_certificate_mapping_v2|backend/certificates/getCertificateMapping_v2|8100|certificates"
     "get_employee_certificate_v2|backend/certificates/getEmployeeCertificate_v2|8102|certificates"
@@ -96,6 +97,7 @@ FUNCTIONS=(
     "add_skill_v2|backend/data/addSkill_v2|8087|data"
     "add_certificate_v2|backend/data/addCertificate_v2|8107|data"
     "add_training_v2|backend/data/addTraining_v2|8108|data"
+    "add_training_course_v2|backend/data/addTrainingCourse_v2|8112|data"
     # Aggregations
     "get_combined_hierarchy_v2|backend/aggregations/getCombinedHierarchy_v2|8110|aggregations"
     "manage_comments_v2|backend/aggregations/manageComments_v2|8111|aggregations"

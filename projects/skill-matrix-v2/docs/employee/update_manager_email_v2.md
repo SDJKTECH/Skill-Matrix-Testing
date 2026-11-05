@@ -143,13 +143,13 @@ WHERE id = :manager_id
 
 ### 3. Update Employee's Manager ID
 
-Updates the employee's `manager_id` foreign key:
+Updates the employee's `reports_to` foreign key:
 ```sql
 UPDATE "{schema}".employee
-SET manager_id = :manager_id,
+SET reports_to = :manager_id,
     updated_at = NOW()
 WHERE LOWER(email) = LOWER(:email)
-RETURNING manager_id, email
+RETURNING reports_to, email
 ```
 
 ### 4. Get Manager Email for Response

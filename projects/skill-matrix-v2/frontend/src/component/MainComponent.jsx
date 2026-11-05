@@ -15,6 +15,7 @@ import AdminConsoleWebhooks from "./AdminConsoleWebhooks";
 import AdminDashboard from "./AdminDashboard";
 import HomeScreen from "./HomeScreen";
 import ProfilePage from "./ProfilePage";
+import EmployeeLearningCenter from "./EmployeeLearningCenter";
 import { hasFullAccessRole, hasWebhookAccess } from "../helper/accessRoles";
 
 function MainComponent() {
@@ -138,6 +139,7 @@ function MainComponent() {
     () => ({
       home: <HomeScreen />,
       profile: <ProfilePage />,
+      "learning-center": <EmployeeLearningCenter />,
       skills: <EmployeeSkillTable />,
       certs: <EmployeeCertTable />,
       approve: <RequestList />,
@@ -162,6 +164,7 @@ function MainComponent() {
       new Set([
         "home",
         "profile",
+        "learning-center",
         "skills",
         "certs",
         "approve",

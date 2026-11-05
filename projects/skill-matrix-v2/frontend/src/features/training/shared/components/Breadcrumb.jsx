@@ -6,8 +6,8 @@ import { FOCUS_RING } from "../config/focusRing";
  * Keep the trail readable on deep drills: first crumb + last two when the
  * path is long; middle levels collapse behind a "…" control that lists them.
  */
-function buildVisibleTrail(items) {
-  if (!items || items.length <= 3) {
+function buildVisibleTrail(items, maxVisible = 3) {
+  if (!items || items.length <= maxVisible) {
     return { visible: items || [], collapsed: [] };
   }
   return {
@@ -23,10 +23,11 @@ function buildVisibleTrail(items) {
  * clickable). Deep paths collapse middle levels so the row never overflows
  * its card; long labels truncate with a title tooltip.
  *
- * Props: { items: [{key,label,onClick}] } — last item's onClick is ignored (current position).
+ * Props: { items: [{key,label,onClick}], maxVisible? } — last item's onClick is ignored
+ * (current position); trails longer than maxVisible (default 3) collapse.
  */
-export default function Breadcrumb({ items }) {
-  const { visible, collapsed } = useMemo(() => buildVisibleTrail(items), [items]);
+export default function Breadcrumb({ items, maxVisible = 3 }) {
+  const { visible, collapsed } = useMemo(() => buildVisibleTrail(items, maxVisible), [items, maxVisible]);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 

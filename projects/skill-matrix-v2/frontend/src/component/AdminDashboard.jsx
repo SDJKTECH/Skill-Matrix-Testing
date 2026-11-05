@@ -1,8 +1,10 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { LearningCenterSection } from "../features/learning-center-admin";
 import {
   FiChevronRight,
   FiChevronLeft,
   FiBook,
+  FiBookOpen,
   FiAward,
   FiList,
   FiPieChart,
@@ -53,6 +55,16 @@ const ADMIN_SECTIONS = [
     colorBg: "bg-orange-50 dark:bg-orange-900/20",
     colorIcon: "text-orange-500 dark:text-orange-400",
     hoverBorder: "hover:border-orange-200 dark:hover:border-orange-700",
+    enabled: true,
+  },
+  {
+    key: "learning-center",
+    label: "Manage Courses",
+    sub: "Courses, lessons & policies",
+    icon: FiBookOpen,
+    colorBg: "bg-indigo-50 dark:bg-indigo-900/20",
+    colorIcon: "text-indigo-500 dark:text-indigo-400",
+    hoverBorder: "hover:border-indigo-200 dark:hover:border-indigo-700",
     enabled: true,
   },
 ];
@@ -245,6 +257,12 @@ export default function AdminDashboard() {
     content = (
       <ErrorBoundary label="the Training Analytics page">
         <TrainingAnalyticsDashboard onBack={goBack} />
+      </ErrorBoundary>
+    );
+  } else if (activeSection === "learning-center") {
+    content = (
+      <ErrorBoundary label="the Manage Courses page">
+        <LearningCenterSection onBack={goBack} onGoHome={goHome} />
       </ErrorBoundary>
     );
   } else if (activeSection) {

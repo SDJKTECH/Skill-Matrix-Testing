@@ -1,0 +1,1 @@
+export { default as AddLessonPage } from "./components/AddLessonPage";

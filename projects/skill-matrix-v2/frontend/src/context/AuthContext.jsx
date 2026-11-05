@@ -477,7 +477,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateManagerEmail = async (newManagerEmail) => {
-    const toastId = toast.loading("Updating manager email...", {
+    const toastId = toast.loading("Updating manager…", {
       duration: Infinity,
     });
 
@@ -506,22 +506,7 @@ export const AuthProvider = ({ children }) => {
           managerEmail: res.data.managerEmail || newManagerEmail,
         }));
 
-        // Show success message, including info if manager was auto-created
-        const message = res.data.message || "Manager email updated successfully!";
-        const isAutoCreated = newManagerEmail.toLowerCase().endsWith("@jktech.com") && 
-                              !user.managerEmail; // Likely auto-created if it's a new @jktech.com email
-        
-        if (isAutoCreated) {
-          toast.success(`${message} Manager account was automatically created.`, {
-            id: toastId,
-            duration: 4000,
-          });
-        } else {
-          toast.success(message, {
-            id: toastId,
-            duration: 3000,
-          });
-        }
+        toast.success("Manager updated", { id: toastId, duration: 3000 });
       } else {
         toast.error("Failed to update manager email. Please try again.", {
           id: toastId,

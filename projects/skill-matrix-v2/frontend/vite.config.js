@@ -20,6 +20,7 @@ const BACKEND_PORTS = {
   'upload_cv_v2': 8092,
   'upload_cv': 8092,  // Fallback for old endpoint name
   'get_employee_skills_info': 8093,
+  'get_emp_training_course_v2': 8094,
 
   // Certificate functions
   'get_certificate_mapping_v2': 8100,
@@ -31,6 +32,7 @@ const BACKEND_PORTS = {
   'add_certificate_v2': 8107,
   // Training / hierarchy
   'add_training_v2': 8108,
+  'add_training_course_v2': 8112,
   'get_combined_hierarchy_v2': 8110,
   // Comments
   'manage_comments_v2': 8111,
@@ -77,6 +79,13 @@ const addCertificateV2Proxy = {
   rewrite: (path) => path.replace(/^\/add_certificate_v2(?:\/)?/, '/') || '/',
 }
 
+// add_training_course_v2 needs path preserved so /add_training_course_v2/lessons reaches backend as /lessons
+const addTrainingCourseV2Proxy = {
+  target: `http://localhost:${BACKEND_PORTS['add_training_course_v2']}`,
+  changeOrigin: true,
+  rewrite: (path) => path.replace(/^\/add_training_course_v2(?:\/)?/, '/') || '/',
+}
+
 // Generate proxy configuration from port mapping
 const generateProxyConfig = () => {
   const proxy = {}
@@ -99,6 +108,7 @@ const generateProxyConfig = () => {
   proxy['/add_skill_v2'] = addSkillV2Proxy
   proxy['/add_training_v2'] = addTrainingV2Proxy
   proxy['/add_certificate_v2'] = addCertificateV2Proxy
+  proxy['/add_training_course_v2'] = addTrainingCourseV2Proxy
   // Ask question function: /ask_question_v2 -> http://localhost:8120/ (root path)
   proxy['/ask_question_v2'] = askQuestionProxy
   return proxy

@@ -7,6 +7,7 @@ import HoverPillLabel from "../../shared/components/HoverPillLabel";
 import CardListPagination from "../../shared/components/CardListPagination";
 import InlineDecisionPanel from "../../shared/components/InlineDecisionPanel";
 import IncompleteTrainingCard from "./IncompleteTrainingCard";
+import ManagerSetupPanel from "./ManagerSetupPanel";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { requestTrainingNomination, suggestEmployees, updateTraining } from "../../../../helper/addTrainingV2Api";
 import { useAuth } from "../../../../hooks/useAuth";
@@ -199,7 +200,9 @@ export default function OpenEnrollmentGrid({ items, loading, searchQuery, employ
                     blockSignal={blockSignal}
                   />
                 )}
-                {isNominating && (
+                {/* No manager means no approval email, so ask for one first. */}
+                {isNominating && !user?.managerEmail && <ManagerSetupPanel onCancel={() => setNominatingBatch(null)} />}
+                {isNominating && user?.managerEmail && (
                   <InlineDecisionPanel
                     tone="request"
                     // Approver only. Title, trainer, and seats are already on the card.
