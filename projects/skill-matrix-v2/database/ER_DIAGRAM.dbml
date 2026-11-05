@@ -351,3 +351,103 @@ Table EventSubscriptionsConfig {
   
   Note: 'Configuration table for mapping internal events to GCP Pub/Sub webhook pushes'
 }
+
+
+// ============================================
+// Quiz Tables
+// ============================================
+
+Table Quiz {
+  quiz_id serial [pk, increment]
+  module_id int [ref: > MasterModule.module_id]
+  quiz_title varchar(255) [not null]
+  description text
+  quiz_type quiz_type_enum [not null, default: 'Lesson']
+  pass_percentage numeric(5,2) [not null, default: 60]
+  is_active bool [not null, default: true]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  Note: 'A quiz attached to a training module. An attempt passes when its percentage >= pass_percentage'
+}
+
+Table QuizQuestion {
+  question_id serial [pk, increment]
+  quiz_id int [not null, ref: > Quiz.quiz_id]
+  question_text text [not null]
+  question_type quiz_question_type_enum [not null, default: 'Single Choice']
+  marks numeric(5,2) [not null, default: 1]
+  display_order int [not null, default: 1]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (quiz_id, display_order) [unique]
+  }
+}
+
+Table QuizOption {
+  option_id serial [pk, increment]
+  question_id int [not null, ref: > QuizQuestion.question_id]
+  option_text text [not null]
+  is_correct bool [not null, default: false]
+  display_order int [not null, default: 1]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (question_id, display_order) [unique]
+    (option_id, question_id) [unique]
+  }
+
+  Note: 'is_correct must never be sent to the browser before the attempt is submitted'
+}
+
+Table QuizAttempt {
+  attempt_id serial [pk, increment]
+  quiz_id int [not null, ref: > Quiz.quiz_id]
+  employee_id int [not null, ref: > Employee.id]
+  status quiz_attempt_status_enum [not null, default: 'In Progress']
+  started_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  submitted_at timestamp
+  score numeric(7,2)
+  max_score numeric(7,2)
+  percentage numeric(5,2)
+  passed bool
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  Note: 'One open attempt per employee per quiz (partial unique index). A Submitted attempt must hold its score and result and is locked by trigger'
+}
+
+Table QuizAttemptAnswer {
+  attempt_answer_id serial [pk, increment]
+  attempt_id int [not null, ref: > QuizAttempt.attempt_id]
+  question_id int [not null]
+  option_id int [not null]
+  created_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+  updated_at timestamp [not null, default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (attempt_id, question_id, option_id) [unique]
+  }
+
+  Note: '(option_id, question_id) is a composite foreign key to QuizOption, so an answer can only pick an option of its own question. Blocked once the attempt is Submitted'
+}
+
+Ref: QuizAttemptAnswer.(option_id, question_id) > QuizOption.(option_id, question_id)
+
+Enum quiz_type_enum {
+  Lesson
+  "Course Assessment"
+}
+
+Enum quiz_question_type_enum {
+  "Single Choice"
+  "Multiple Choice"
+}
+
+Enum quiz_attempt_status_enum {
+  "In Progress"
+  Submitted
+}

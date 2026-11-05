@@ -204,6 +204,63 @@ erDiagram
         int batch_id FK
     }
 
+    Quiz {
+        int quiz_id PK
+        int module_id FK
+        string quiz_title
+        string description
+        string quiz_type
+        decimal pass_percentage
+        boolean is_active
+        datetime created_at
+        datetime updated_at
+    }
+
+    QuizQuestion {
+        int question_id PK
+        int quiz_id FK
+        string question_text
+        string question_type
+        decimal marks
+        int display_order
+        datetime created_at
+        datetime updated_at
+    }
+
+    QuizOption {
+        int option_id PK
+        int question_id FK
+        string option_text
+        boolean is_correct
+        int display_order
+        datetime created_at
+        datetime updated_at
+    }
+
+    QuizAttempt {
+        int attempt_id PK
+        int quiz_id FK
+        int employee_id FK
+        string status
+        datetime started_at
+        datetime submitted_at
+        decimal score
+        decimal max_score
+        decimal percentage
+        boolean passed
+        datetime created_at
+        datetime updated_at
+    }
+
+    QuizAttemptAnswer {
+        int attempt_answer_id PK
+        int attempt_id FK
+        int question_id FK
+        int option_id FK
+        datetime created_at
+        datetime updated_at
+    }
+
     Employee ||--o{ Employee : manages
     MasterDomain ||--o{ SkillHierarchyLink : has
     MasterDiscipline ||--o{ SkillHierarchyLink : has
@@ -226,6 +283,13 @@ erDiagram
     EmployeeCertificates ||--o{ Comment : has
     EmployeeSkills ||--o{ Comment : has
     TrainingBatches ||--o{ Comment : has
+    MasterModule ||--o{ Quiz : has
+    Quiz ||--o{ QuizQuestion : contains
+    QuizQuestion ||--o{ QuizOption : offers
+    Quiz ||--o{ QuizAttempt : attempted_as
+    Employee ||--o{ QuizAttempt : takes
+    QuizAttempt ||--o{ QuizAttemptAnswer : records
+    QuizOption ||--o{ QuizAttemptAnswer : chosen_in
     EventSubscriptionsConfig {
         int id PK
         string event_action
@@ -273,6 +337,18 @@ erDiagram
 - Values: `'Employee'`, `'Manager'`, `'Department'`
 - Used in: `Comment.comment_type`
 
+### 8. `quiz_type_enum`
+- Values: `'Lesson'`, `'Course Assessment'`
+- Used in: `Quiz.quiz_type`
+
+### 9. `quiz_question_type_enum`
+- Values: `'Single Choice'`, `'Multiple Choice'`
+- Used in: `QuizQuestion.question_type`
+
+### 10. `quiz_attempt_status_enum`
+- Values: `'In Progress'`, `'Submitted'`
+- Used in: `QuizAttempt.status`
+
 ## Key Relationships
 
 ### One-to-Many Relationships
@@ -299,4 +375,5 @@ erDiagram
 2. **Polymorphic Comment**: The `Comment` table uses multiple nullable foreign keys with a CHECK constraint to ensure exactly one is set
 3. **All tables** have `created_at` and `updated_at` timestamps with automatic update triggers
 4. **Foreign Key Actions**: Most use `ON UPDATE CASCADE` and appropriate `ON DELETE` actions (CASCADE, RESTRICT, SET NULL)
+5. **Quiz attempts**: a `Submitted` `QuizAttempt` and its `QuizAttemptAnswer` rows are locked by trigger; `QuizOption.is_correct` must not be returned to the browser before submit; only one `In Progress` attempt is allowed per employee per quiz
 5. **Employee ID**: `emp_id` is JKTech's business employee identifier, while `id` is the technical primary key used for all foreign key relationships

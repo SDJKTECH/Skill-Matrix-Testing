@@ -47,6 +47,13 @@ This directory contains database schema and migration scripts.
 - `MasterModule` - Training modules
 - `TrainingHierarchyLinks` - Links area, subarea, and module
 
+### Quiz Tables
+- `quiz` - Quizzes attached to a training module, with a pass mark
+- `quiz_question` - Questions of a quiz
+- `quiz_option` - Answer options of a question (`is_correct` marks the right ones)
+- `quiz_attempt` - One employee's attempt; locked once Submitted
+- `quiz_attempt_answer` - The options an employee selected in an attempt
+
 ### Other Tables
 - `Comment` - Polymorphic comments for skills, certificates, and trainings
 
@@ -57,6 +64,9 @@ This directory contains database schema and migration scripts.
 3. `training_status_enum` - Not Started, In Progress, Completed, Not Completed
 4. `employee_type_enum` - New Lateral, Existing Lateral, Freshers, Customer, Interns
 5. `comment_type_enum` - Employee, Manager, Department
+6. `quiz_type_enum` - Lesson, Course Assessment
+7. `quiz_question_type_enum` - Single Choice, Multiple Choice
+8. `quiz_attempt_status_enum` - In Progress, Submitted
 
 ## Usage
 
