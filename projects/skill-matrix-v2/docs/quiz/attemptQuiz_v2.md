@@ -8,7 +8,7 @@
 **Methods**: `GET`, `POST`, `OPTIONS` (CORS preflight)
 **Story**: SMT-8, "Attempt a lesson or course quiz"
 
-Lets an employee attempt a lesson quiz or an end-of-course assessment: start (or resume) an attempt, save answers question by question, read the attempt back, and submit it for scoring. Once submitted, an attempt is locked.
+Lets an employee attempt a lesson quiz or an end-of-course assessment: start (or resume) an attempt, save answers for one question at a time, read the attempt back, and submit it for scoring. Once submitted, an attempt is locked. The API supports saving each question on its own, but the frontend player sends answers only when the employee presses Submit (see "How it works").
 
 `is_correct` is never returned by any action.
 
@@ -145,7 +145,7 @@ Body: `{ "error": "<message>" }`.
 1. `QuizPlayer` reads the signed-in user's email and passes it, with `quizId` or `moduleId` + `quizType`, to `useQuizAttempt`.
 2. The hook calls `start`. Questions are sorted by `displayOrder`. Saved answers from the response are loaded into the answers map, so a resumed attempt shows previous selections.
 3. Selecting an option updates the answers map only in the browser. Single Choice replaces the selection; Multiple Choice toggles the option.
-4. **Previous / Next** and palette clicks change only the current question index. No request is sent when moving.
+4. **Previous / Next** and palette clicks change only the current question index. No request is sent when moving. Answers are not saved to the server until Submit, so selections made before a page reload or before closing the quiz are lost unless they were already saved by an earlier Submit attempt. The player has no autosave.
 5. **Submit** (last question) first calls `save` for every question whose answer differs from the saved one, then calls `submit`. A `useSubmitGuard` lock stops a second submit while one is in progress.
 6. If a save or submit fails, the error is shown and the questions and answers stay on screen, so the employee can try again. Load errors are kept separate from submit errors.
 7. After a successful submit, the result view shows the score, percentage and pass/fail outcome.
@@ -188,5 +188,5 @@ Frontend (no automated tests in this project). Check by hand:
 2. Sign in, open My Trainings and open a quiz with `initialQuiz`. The first question and its options appear.
 3. Select answers, move with Previous/Next, and confirm the selections are still there.
 4. Click palette numbers and confirm the jump and the current/answered/unanswered styling.
-5. Reload and open the same quiz again. Confirm the saved answers come back and the attempt is resumed.
+5. Reload the page before submitting, reopen the quiz, and confirm the same attempt is resumed (`resumed: true`). Confirm that the selections made before the reload are gone, because the player saves only on Submit. Selections are restored only for answers already saved to the server.
 6. Submit on the last question. Confirm the result view shows the score, percentage and Pass/Fail. Confirm a second Submit does nothing.
