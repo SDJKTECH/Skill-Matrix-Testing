@@ -1,0 +1,16 @@
+# Orchestrator settings for this project. See projects/_template/ for all keys.
+# NOTE: the repo and Jira key below are placeholders; set them before running.
+
+# Issues and PRs go to the Skill Matrix Testing repo that holds this folder.
+github_repo = "SDJKTECH/Skill-Matrix-Testing"
+base_branch = "dev"
+# jira_project = "SKILL"
+
+# Feature docs live here (see CLAUDE.md, section "Docs").
+docs_dir = "docs"
+# The project has no test or lint command of its own, so none is set. The gate then
+# checks only what the agents add: it compiles their new Python files and runs their
+# new or changed Python test files. Existing code and tests are never run. Set
+# test_command / lint_command here to run a real suite instead.
+# test_command = ""
+# lint_command = ""

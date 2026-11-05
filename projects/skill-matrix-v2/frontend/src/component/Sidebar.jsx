@@ -9,8 +9,7 @@ import {
   FiBarChart2,
   FiCheckSquare,
   FiX,
-  FiSidebar,
-  FiBookOpen
+  FiSidebar
 } from "react-icons/fi";
 import { useSkillMatrixNav } from "../context/SkillMatrixNavContext";
 import { useAuth } from "../hooks/useAuth";
@@ -25,7 +24,6 @@ const NAV_LABELS = {
   home: "Home",
   profile: "Profile",
   overviewGraph: "Overview Graph",
-  learningCenter: "Employee Learning Center",
   approvals: "Approvals",
   reports: "Reports",
   adminDashboard: "Admin Dashboard",
@@ -110,10 +108,6 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
     setActiveTab("graph");
     onNavigate?.();
   };
-  const handleLearningCenter = () => {
-    setActiveTab("learning-center");
-    onNavigate?.();
-  };
   const handleApprovals = () => {
     setActiveTab("approve");
     onNavigate?.();
@@ -141,7 +135,6 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
     if (key === "home") return activeTab === "home";
     if (key === "profile") return activeTab === "profile";
     if (key === "overviewGraph") return activeTab === "graph";
-    if (key === "learningCenter") return activeTab === "learning-center";
     if (key === "approvals") return activeTab === "approve";
     if (key === "reports") return activeTab === "download-report";
     if (key === "admin") return activeTab === "update";
@@ -265,18 +258,6 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
           >
             <FiBarChart2 className="h-5 w-5 shrink-0" />
             {showLabels && <span className="truncate">{NAV_LABELS.overviewGraph}</span>}
-          </button>
-        </div>
-
-        {/* Employee Learning Center */}
-        <div className="relative" onMouseEnter={!isMobile ? (e) => handleMenuHover("learningCenter", e) : undefined}>
-          <button
-            type="button"
-            onClick={handleLearningCenter}
-            className={itemClass("learningCenter")}
-          >
-            <FiBookOpen className="h-5 w-5 shrink-0" />
-            {showLabels && <span className="truncate">{NAV_LABELS.learningCenter}</span>}
           </button>
         </div>
 

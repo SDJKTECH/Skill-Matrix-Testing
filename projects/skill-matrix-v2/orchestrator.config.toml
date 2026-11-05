@@ -3,7 +3,7 @@
 
 # Issues and PRs go to the Skill Matrix Testing repo that holds this folder.
 github_repo = "SDJKTECH/Skill-Matrix-Testing"
-base_branch = "development"
+base_branch = "dev"
 # jira_project = "SKILL"
 
 # Feature docs live here (see CLAUDE.md, section "Docs").

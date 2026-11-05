@@ -403,6 +403,18 @@ def branch_exists(repository_path: Path, branch: str) -> bool:
     return bool(_run_git(repository_path, "branch", "--list", branch))
 
 
+def branch_exists_anywhere(repository_path: Path, branch: str) -> bool:
+    """True if the branch exists locally or on any remote."""
+    found = _run_git(
+        repository_path,
+        "for-each-ref",
+        "--format=%(refname)",
+        f"refs/heads/{branch}",
+        f"refs/remotes/*/{branch}",
+    )
+    return bool(found)
+
+
 def ensure_branch_worktree(
     repository_path: Path,
     worktrees_root: Path,

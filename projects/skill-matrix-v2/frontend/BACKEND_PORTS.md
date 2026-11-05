@@ -16,7 +16,6 @@ This document lists the port assignments for local development. When starting ba
 - `update_manager_email_v2` → Port **8091**
 - `upload_cv_v2` → Port **8092**
 - `get_employee_skills_info` → Port **8093**
-- `get_emp_training_course_v2` → Port **8094**
 
 ## Certificate Functions
 - `get_certificate_mapping_v2` → Port **8100**
@@ -30,7 +29,6 @@ This document lists the port assignments for local development. When starting ba
 ## Training / Hierarchy
 - `add_training_v2` → Port **8108**
 - `get_combined_hierarchy_v2` → Port **8110**
-- `add_training_course_v2` → Port **8112**
 
 ## Comments
 - `manage_comments_v2` → Port **8111**

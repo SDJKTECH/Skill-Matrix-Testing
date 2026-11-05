@@ -35,20 +35,18 @@ $allFunctions = @(
     @{name="update_manager_email_v2"; path="backend\employee\update_manager_email_v2"; port=8091; category="employee"},
     @{name="upload_cv_v2"; path="backend\employee\uploadCv_v2"; port=8092; category="employee"},
     @{name="get_employee_skills_info"; path="backend\employee\getEmployeeSkillsInfo_v2"; port=8093; category="employee"},
-    @{name="get_emp_training_course_v2"; path="backend\employee\getEmpTrainingCourse_v2"; port=8094; category="employee"},
     # Certificate functions
     @{name="get_certificate_mapping_v2"; path="backend\certificates\getCertificateMapping_v2"; port=8100; category="certificates"},
     @{name="get_employee_certificate_v2"; path="backend\certificates\getEmployeeCertificate_v2"; port=8102; category="certificates"},
     @{name="save_employee_certificate_v2"; path="backend\certificates\saveEmployeeCertificate_v2"; port=8104; category="certificates"},
     # Data functions
     @{name="get_master_file_v2"; path="backend\data\getMasterFile_v2"; port=8085; category="data"},
-    @{name="add_skill_v2"; path="backend\data\addSkill_v2"; port=8087; category="data"},
+     @{name="add_skill_v2"; path="backend\data\addSkill_v2"; port=8087; category="data"},
     @{name="add_certificate_v2"; path="backend\data\addCertificate_v2"; port=8107; category="certificates"},# Aggregation functions
     @{name="add_training_v2"; path="backend\data\addTraining_v2"; port=8108; category="data"},
     @{name="get_combined_hierarchy_v2"; path="backend\aggregations\getCombinedHierarchy_v2"; port=8110; category="aggregations"},
     @{name="manage_comments_v2"; path="backend\aggregations\manageComments_v2"; port=8111; category="aggregations"},
-    @{name="add_training_course_v2"; path="backend\data\addTrainingCourse_v2"; port=8112; category="data"},
-    
+
     # GenAI functions
     @{name="ask_question_v2"; path="backend\genai\askQuestion_v2"; port=8120; category="genai"},
     # Reports functions

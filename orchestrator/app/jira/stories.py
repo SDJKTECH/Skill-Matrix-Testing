@@ -20,6 +20,7 @@ from orchestrator.app.jira.client import JiraApi, make_jira_api
 from orchestrator.app.jira.documenter import DocResult, StoryDocumenter, story_changes
 from orchestrator.app.jira.models import JiraItem
 from orchestrator.app.vcs.git_manager import (
+    branch_exists_anywhere,
     conflicted_files,
     ensure_branch_worktree,
     merge_branch,
@@ -60,9 +61,49 @@ def story_item(task: Task) -> JiraItem | None:
     return None
 
 
-def story_name(item: JiraItem) -> str:
-    """The worktree name of a Story's branch, e.g. 'story-sg-2'."""
+def _base_story_name(item: JiraItem) -> str:
     return "story-" + re.sub(r"[^A-Za-z0-9_-]+", "-", item.key.lower()).strip("-")
+
+
+def story_name(item: JiraItem) -> str:
+    """The worktree name of a Story's branch, e.g. 'story-sg-2'.
+
+    Once the Story has claimed a branch (see `claim_story_branch`) that branch's
+    name is used, e.g. 'story-sg-2-attempt-2'.
+    """
+    if item.branch_name:
+        return item.branch_name.removeprefix("agent/")
+
+    return _base_story_name(item)
+
+
+def claim_story_branch(item: JiraItem, repository: Path, worktrees_root: Path) -> None:
+    """Give a Story that has no branch yet one whose name is not taken.
+
+    Leftovers of an earlier run of the same Story (its branch, locally or on a
+    remote, or its worktree folder) are never reused: the new run gets
+    'story-<key>-attempt-2', then '-attempt-3', and so on. A Story that already
+    has a branch keeps it.
+    """
+    if item.branch_name:
+        return
+
+    base = _base_story_name(item)
+    name, attempt = base, 1
+
+    while (
+        branch_exists_anywhere(repository, f"agent/{name}")
+        or (worktrees_root.expanduser().resolve() / name).exists()
+    ):
+        attempt += 1
+        name = f"{base}-attempt-{attempt}"
+
+    item.branch_name = f"agent/{name}"
+
+    if attempt > 1:
+        logger.info(
+            "Story %s starts a new attempt: branch=%s", item.key, item.branch_name
+        )
 
 
 def story_branch_name(item: JiraItem) -> str:
@@ -147,6 +188,7 @@ def prepare_story_branch(task: Task, base_branch: str) -> str | None:
         return None
 
     try:
+        claim_story_branch(item, _repository(task), Path(task.worktree_path).parent)
         ensure_branch_worktree(
             _repository(task),
             Path(task.worktree_path).parent,
@@ -157,8 +199,7 @@ def prepare_story_branch(task: Task, base_branch: str) -> str | None:
         logger.warning("Could not prepare the Story branch: %s error=%s", item.key, exc)
         return None
 
-    item.branch_name = story_branch_name(item)
-    return item.branch_name
+    return story_branch_name(item)
 
 
 def sync_with_story(task: Task, remote: str, base_branch: str) -> None:
@@ -259,10 +300,12 @@ class StoryDelivery:
         the builder can resolve them. Any other failure leaves `ok` False without
         a problem: the task must not look finished.
         """
-        branch = story_branch_name(item)
-
         with _story_lock:
             try:
+                claim_story_branch(
+                    item, _repository(task), Path(task.worktree_path or "").parent
+                )
+                branch = story_branch_name(item)
                 worktree = ensure_branch_worktree(
                     _repository(task),
                     Path(task.worktree_path or "").parent,

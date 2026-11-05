@@ -157,7 +157,7 @@ def _update_manager_email(
                 SET reports_to = :manager_id,
                     updated_at = NOW()
                 WHERE LOWER(email) = LOWER(:email)
-                RETURNING reports_to, email
+                RETURNING manager_id, email
                 """
             )
             

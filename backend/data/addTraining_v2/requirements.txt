@@ -1,0 +1,9 @@
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+flask==2.3.3
+python-dotenv==1.0.0
+functions-framework==3.5.0
+pandas==2.2.3
+openpyxl==3.1.5
+google-cloud-storage==3.9.0
+requests==2.31.0

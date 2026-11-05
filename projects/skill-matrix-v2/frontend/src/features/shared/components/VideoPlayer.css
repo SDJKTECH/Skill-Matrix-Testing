@@ -1,5 +1,0 @@
-/* fill mode stretches .vjs-tech to the box with no object-fit of its own — add it so the
-   video stays in proportion (letterboxed) instead of distorting to match the box. */
-.video-js.vjs-fill .vjs-tech {
-  object-fit: contain;
-}

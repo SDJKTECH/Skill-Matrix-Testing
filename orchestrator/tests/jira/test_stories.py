@@ -91,6 +91,32 @@ def test_a_task_under_a_story_knows_its_story(env) -> None:
     assert story_branch_name(story_item(task)) == "agent/story-sg-2"
 
 
+def test_a_story_with_an_old_branch_gets_a_new_attempt_name(env) -> None:
+    _, _, repository, _ = env
+    git(repository, "branch", "agent/story-sg-2")
+    git(repository, "branch", "agent/story-sg-2-attempt-2")
+    first, second = story_tasks(env, "SG-3", "SG-4")
+    publisher = FakePublisher()
+    delivery = StoryDelivery(env[0], publisher)
+    build(first, "engine.py")
+    build(second, "walls.py")
+    item = story_item(first)
+
+    assert delivery.deliver(first, item).ok
+    assert delivery.deliver(second, item).ok
+
+    assert item.branch_name == "agent/story-sg-2-attempt-3"
+    assert first.story_branch == "agent/story-sg-2-attempt-3"
+    assert publisher.calls[0][1] == "agent/story-sg-2-attempt-3"
+    assert "engine.py" in git(
+        repository, "ls-tree", "-r", "--name-only", "agent/story-sg-2-attempt-3"
+    )
+    # The old branch was left alone.
+    assert "engine.py" not in git(
+        repository, "ls-tree", "-r", "--name-only", "agent/story-sg-2"
+    )
+
+
 def test_a_task_without_a_story_has_none(env) -> None:
     session, milestone_id, _, root = env
     items = [work("SG-3", None, [EPIC])]

@@ -3,12 +3,7 @@ import { createPortal } from "react-dom";
 
 // Portals content to document.body as `position: fixed` off the trigger's own rect — escapes any
 // overflow-x-auto ancestor, which would otherwise clip it (overflow-x: auto forces overflow-y clipping too).
-export default function InfoPopover({
-  triggerEl,
-  children,
-  onClose,
-  placement = "auto",
-}) {
+export default function InfoPopover({ triggerEl, children, onClose }) {
   const popoverRef = useRef(null);
   const [style, setStyle] = useState({ position: "fixed", top: -9999, left: -9999, visibility: "hidden" });
   const [arrow, setArrow] = useState({ left: 16, side: "top" });
@@ -45,67 +40,42 @@ export default function InfoPopover({
 
     const spaceBelow = belowBoundary - triggerRect.bottom;
     const spaceAbove = triggerRect.top - aboveBoundary;
-    const openUp =
-      placement === "top-left" ||
-      (spaceBelow < popoverRect.height + margin &&
-        spaceAbove > spaceBelow);
+    const openUp = spaceBelow < popoverRect.height + margin && spaceAbove > spaceBelow;
     const top = openUp
       ? Math.max(margin, triggerRect.top - popoverRect.height - margin)
       : triggerRect.bottom + margin;
 
     const spaceRight = window.innerWidth - triggerRect.right;
     const alignRight = spaceRight < popoverRect.width;
-    const left =
-      placement === "left"
-        ? Math.max(margin, triggerRect.left - popoverRect.width - margin)
-        : placement === "top-left"
-          ? Math.max(
-              margin,
-              Math.min(
-                triggerRect.right - popoverRect.width,
-                window.innerWidth - popoverRect.width - margin
-              )
-            )
-          : alignRight
-            ? Math.max(margin, triggerRect.right - popoverRect.width)
-            : Math.min(
-                triggerRect.left,
-                window.innerWidth - popoverRect.width - margin
-              );
+    const left = alignRight
+      ? Math.max(margin, triggerRect.right - popoverRect.width)
+      : Math.min(triggerRect.left, window.innerWidth - popoverRect.width - margin);
 
     setStyle({ position: "fixed", top, left, visibility: "visible" });
-    const arrowLeft = Math.min(
-      Math.max(
-        triggerRect.left + triggerRect.width / 2 - left - 6,
-        8
-      ),
-      popoverRect.width - 20
-    );
+    // Arrow sits roughly under/over the trigger's own horizontal center,
+    // clamped so it never renders past the popover's own rounded corners.
+    const arrowLeft = Math.min(Math.max(triggerRect.left + triggerRect.width / 2 - left - 4, 8), popoverRect.width - 16);
     setArrow({ left: arrowLeft, side: openUp ? "bottom" : "top" });
-  }, [triggerEl, children, placement]);
+  }, [triggerEl, children]);
 
   return createPortal(
     <div
       ref={popoverRef}
       style={style}
-      className="relative z-50 w-52 rounded-lg border border-slate-200 bg-white p-3 shadow-xl dark:border-slate-700 dark:bg-slate-800"
+      className="w-52 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-xl p-3 z-50"
     >
+      {/* Directional arrow — CSS-only rotated square, border on just the two
+          outward-facing edges so it reads as a seamless triangular tip
+          pointing back at the trigger, matching whichever side (top/bottom)
+          the popover opened from. */}
       <div
         style={{ left: arrow.left }}
-        className={`absolute h-2 w-3 ${
+        className={`absolute w-2 h-2 rotate-45 bg-white dark:bg-slate-800 ${
           arrow.side === "top"
-            ? "-top-[7px] [clip-path:polygon(50%_0,100%_100%,0_100%)] bg-slate-200 dark:bg-slate-700"
-            : "-bottom-[7px] [clip-path:polygon(0_0,100%_0,50%_100%)] bg-slate-200 dark:bg-slate-700"
+            ? "-top-1 border-l border-t border-slate-200 dark:border-slate-700"
+            : "-bottom-1 border-r border-b border-slate-200 dark:border-slate-700"
         }`}
-      >
-        <span
-          className={`absolute inset-x-px h-[6px] bg-white dark:bg-slate-800 ${
-            arrow.side === "top"
-              ? "top-px [clip-path:polygon(50%_0,100%_100%,0_100%)]"
-              : "top-0 [clip-path:polygon(0_0,100%_0,50%_100%)]"
-          }`}
-        />
-      </div>
+      />
       {children}
     </div>,
     document.body

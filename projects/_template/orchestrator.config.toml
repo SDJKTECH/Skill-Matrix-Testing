@@ -4,7 +4,7 @@
 
 # GitHub repository whose issues and pull requests this project uses (owner/name).
 github_repo = "owner/repo"
-base_branch = "development"
+base_branch = "dev"
 # git_remote = "origin"
 # issue_label = "agent-task"
 
