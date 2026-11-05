@@ -3,6 +3,7 @@ import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import { FOCUS_RING } from "../../shared/config/focusRing";
 import { useAuth } from "../../../../hooks/useAuth";
 import useQuizAttempt from "../hooks/useQuizAttempt";
+import QuizPalette from "./QuizPalette";
 import { SINGLE_CHOICE, countAnswered } from "../services/quizAnswers";
 
 const BTN = `px-3 py-1.5 text-sm rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer ${FOCUS_RING}`;
@@ -80,6 +81,14 @@ export default function QuizPlayer({ quizId, moduleId, quizType, onExit }) {
           Question {currentIndex + 1} of {questions.length} · {countAnswered(answers, questions)} answered
         </p>
       </div>
+
+      <QuizPalette
+        questions={questions}
+        answers={answers}
+        currentIndex={currentIndex}
+        onJump={q.goTo}
+        disabled={q.submitting}
+      />
 
       <fieldset className="flex flex-col gap-2" disabled={q.submitting}>
         <legend className="text-sm font-medium text-gray-900 dark:text-white mb-1">{question.questionText}</legend>
