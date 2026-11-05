@@ -35,7 +35,7 @@ Reports, Admin Console and Admin Dashboard are shown only when the signed-in use
 - **Label:** "Learning Center" (from `NAV_LABELS.learningCenter` in `Sidebar.jsx`).
 - **Position:** between Overview Graph and Approvals.
 - **Icon:** open book (`FiBookOpen` from `react-icons/fi`).
-- **Behaviour:** selecting the entry calls `handleLearningCenter`, which sets the active tab to `learning-center` and then calls `onNavigate`. The Learning Center page then opens. On mobile, `layout.jsx` uses `onNavigate` to close the drawer.
+- **Behaviour:** selecting the entry calls `handleLearningCenter`, which sets the active tab to `learning-center` and then calls `onNavigate`. The Learning Center page then opens. `layout.jsx` passes `onNavigate`, which closes the chat panel and, on mobile, the navigation drawer.
 - **Route:** the tab id `learning-center` is registered in `frontend/src/component/MainComponent.jsx`. It maps to the `EmployeeLearningCenter` component (`frontend/src/component/EmployeeLearningCenter.jsx`), which renders `LearningCenterCatalog` from `frontend/src/features/learning-center`. The tab is in the visible-tabs set without a role check. The page content is described in `docs/learning-center/learningCenterLanding.md`.
 - **Active state:** the entry is highlighted while the Learning Center page is open. The check is `isActive("learningCenter")` in `Sidebar.jsx`, which compares the entry with `activeTab === "learning-center"`. Opening another entry removes the highlight.
 - **Collapsed sidebar:** only the book icon is shown; hovering it shows the "Learning Center" tooltip.
