@@ -9,7 +9,8 @@ import {
   FiBarChart2,
   FiCheckSquare,
   FiX,
-  FiSidebar
+  FiSidebar,
+  FiBookOpen
 } from "react-icons/fi";
 import { useSkillMatrixNav } from "../context/SkillMatrixNavContext";
 import { useAuth } from "../hooks/useAuth";
@@ -25,6 +26,7 @@ const NAV_LABELS = {
   profile: "Profile",
   overviewGraph: "Overview Graph",
   approvals: "Approvals",
+  learningCenter: "Learning Center",
   reports: "Reports",
   adminDashboard: "Admin Dashboard",
 };
@@ -112,6 +114,10 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
     setActiveTab("approve");
     onNavigate?.();
   };
+  const handleLearningCenter = () => {
+    setActiveTab("learning-center");
+    onNavigate?.();
+  };
   const handleReports = () => {
     setActiveTab("download-report");
     onNavigate?.();
@@ -136,6 +142,7 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
     if (key === "profile") return activeTab === "profile";
     if (key === "overviewGraph") return activeTab === "graph";
     if (key === "approvals") return activeTab === "approve";
+    if (key === "learningCenter") return activeTab === "learning-center";
     if (key === "reports") return activeTab === "download-report";
     if (key === "admin") return activeTab === "update";
     if (key === "adminDashboard") return activeTab === "admin-dashboard";
@@ -270,6 +277,19 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
           >
             <FiCheckSquare className="h-5 w-5 shrink-0" />
             {showLabels && <span className="truncate">{NAV_LABELS.approvals}</span>}
+          </button>
+        </div>
+
+        {/* Learning Center — visible to all employees, desktop and mobile drawer */}
+        <div className="relative" onMouseEnter={!isMobile ? (e) => handleMenuHover("learningCenter", e) : undefined}>
+          <button
+            type="button"
+            onClick={handleLearningCenter}
+            className={itemClass("learningCenter")}
+            aria-current={isActive("learningCenter") ? "page" : undefined}
+          >
+            <FiBookOpen className="h-5 w-5 shrink-0" />
+            {showLabels && <span className="truncate">{NAV_LABELS.learningCenter}</span>}
           </button>
         </div>
 
