@@ -17,7 +17,9 @@ Entries appear in this order, from top to bottom:
 5. **Learning Center** - opens the Learning Center page. Shown to all employees on desktop and mobile.
 6. **Reports** - opens the report download page. Admin-level users only.
 7. **Admin Console** - opens the admin area, starting on the Skill table. Admin-level users only.
-8. **Admin Dashboard** - opens the Admin overview. Admin-level users only.
+8. **Admin Dashboard** - opens the Admin overview. Admin-level users only. Other pages can also open one training batch section of this page through a deep link, but the sidebar entry itself is shown only to admin-level users.
+
+For users without admin access, the list shows only Home, Profile, Overview Graph (desktop), Approvals and Learning Center.
 
 Each entry has an icon on the left and its name as text. The Learning Center entry uses an open-book icon (`FiBookOpen` from `react-icons/fi`).
 
@@ -42,7 +44,7 @@ The current tab is kept in the navigation context (`frontend/src/context/SkillMa
 ## Desktop Sidebar
 
 - The sidebar starts **collapsed** to a narrow icon-only strip.
-- In the collapsed strip, only the icons are shown. Hover over an icon and a dark tooltip appears to its right with the entry name, for example "Learning Center".
+- In the collapsed strip, only the icons are shown. Hover over an icon and a dark tooltip appears to its right with the entry name, for example "Learning Center". Tooltips are not shown on small screens.
 - Use the arrow button at the top of the sidebar to expand it. Names are then shown next to the icons. Use the same button to collapse it again.
 - Hovering **Admin Console** shows no tooltip. It opens a flyout menu with **Manage Tables** (Skill, Certificate, Training) and **Manage Webhooks** (Webhooks).
 
@@ -77,7 +79,7 @@ The current tab is kept in the navigation context (`frontend/src/context/SkillMa
 The frontend has no automated tests, so check these steps in a browser:
 
 1. Start the dev server: `cd frontend && npm run dev`, then open the app and sign in.
-2. **Entry shown**: on a desktop screen, confirm a "Learning Center" entry (open-book icon) appears between Approvals and Reports. Hover it while the sidebar is collapsed and confirm the tooltip reads "Learning Center". Expand the sidebar and confirm the name is shown.
+2. **Entry shown**: on a desktop screen with an admin account, confirm a "Learning Center" entry (open-book icon) appears between Approvals and Reports. For a non-admin account, it appears directly after Approvals. Hover it while the sidebar is collapsed and confirm the tooltip reads "Learning Center". Expand the sidebar and confirm the name is shown.
 3. **Entry opens the page**: select it. The "Learning Center" heading and the dashed placeholder box should appear in the main area.
 4. **Active highlight**: while the page is open, the Learning Center entry should have the blue active style. Other entries should not. Other pages should not highlight it.
 5. **Accessibility**: inspect the button and confirm it has `aria-current="page"` while the page is open and no `aria-current` on other pages.
