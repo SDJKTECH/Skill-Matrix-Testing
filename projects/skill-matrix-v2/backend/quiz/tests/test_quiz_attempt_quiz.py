@@ -8,12 +8,54 @@ from unittest.mock import MagicMock
 
 import pytest
 
-# The module under test needs these libraries; skip cleanly when one is not installed.
-flask = pytest.importorskip("flask")
-pytest.importorskip("dotenv")
-sa_exc = pytest.importorskip("sqlalchemy.exc")
-Flask = flask.Flask
-DBAPIError, IntegrityError = sa_exc.DBAPIError, sa_exc.IntegrityError
+def _install_stubs():
+    """Register minimal stand-ins for libraries that are not installed.
+
+    The scoring/DB-logic tests only need the exception classes and a few
+    names to import main.py; the Flask entry-point tests still need real Flask.
+    """
+    import sys
+    import types
+
+    def mod(name, **attrs):
+        module = types.ModuleType(name)
+        module.__dict__.update(attrs)
+        sys.modules[name] = module
+        return module
+
+    try:
+        import dotenv  # noqa: F401
+    except ImportError:
+        mod("dotenv", load_dotenv=lambda *a, **k: None)
+    try:
+        import flask  # noqa: F401
+    except ImportError:
+        mod("flask", jsonify=lambda data: data, make_response=lambda *a, **k: a)
+    try:
+        import sqlalchemy  # noqa: F401
+        import sqlalchemy.exc  # noqa: F401
+        import sqlalchemy.pool  # noqa: F401
+    except ImportError:
+        class SQLAlchemyError(Exception):
+            pass
+
+        class DBAPIError(SQLAlchemyError):
+            def __init__(self, statement, params, orig):
+                super().__init__(statement)
+                self.statement, self.params, self.orig = statement, params, orig
+
+        class IntegrityError(DBAPIError):
+            pass
+
+        mod("sqlalchemy", create_engine=None, text=lambda s: s)
+        mod("sqlalchemy.exc", SQLAlchemyError=SQLAlchemyError,
+            DBAPIError=DBAPIError, IntegrityError=IntegrityError)
+        mod("sqlalchemy.pool", NullPool=object)
+
+
+_install_stubs()
+
+from sqlalchemy.exc import DBAPIError, IntegrityError  # noqa: E402
 
 MAIN = Path(__file__).resolve().parent.parent / "attemptQuiz_v2" / "main.py"
 spec = importlib.util.spec_from_file_location("attempt_quiz_v2_main", MAIN)
@@ -193,6 +235,7 @@ def test_start_inactive_quiz_conflict_and_missing_quiz():
 
 def test_start_by_module_and_type():
     c = FakeConn([("module_id = :module_id", [quiz_row()]),
+                  ("FROM \"s\".quiz\n", [quiz_row()]),
                   ("status = 'In Progress'", [attempt_row()])])
     assert m.start_attempt(c, SCHEMA, 1, module_id=5, quiz_type="Lesson")["resumed"]
     assert c.calls[0][1] == {"module_id": 5, "quiz_type": "Lesson"}
@@ -261,6 +304,9 @@ def test_save_rejected_does_not_write():
 
 # ---------- submit ----------
 
+UPDATE_ATTEMPT = 'UPDATE "s".quiz_attempt'  # not "FOR UPDATE" from the row-lock SELECTs
+
+
 def submit_conn(selected, pass_pct=Decimal("60"), status="In Progress", emp=1, questions=None):
     questions = questions if questions is not None else [
         {"question_id": 1, "marks": Decimal("1")}, {"question_id": 2, "marks": Decimal("1")},
@@ -273,7 +319,7 @@ def submit_conn(selected, pass_pct=Decimal("60"), status="In Progress", emp=1, q
                                {"question_id": 2, "option_id": 21},
                                {"question_id": 3, "option_id": 31}]),
         ("FROM \"s\".quiz_attempt_answer", [{"question_id": q, "option_id": o} for q, o in selected]),
-        ("UPDATE", lambda p: [attempt_row(
+        (UPDATE_ATTEMPT, lambda p: [attempt_row(
             status="Submitted", score=p["score"], max_score=p["max_score"],
             percentage=p["percentage"], passed=p["passed"])]),
     ])
@@ -284,7 +330,7 @@ def test_submit_pass_sets_all_result_columns_in_one_update():
     out = m.submit_attempt(c, SCHEMA, 1, 100)
     assert (out["score"], out["maxScore"], out["percentage"]) == (2.0, 3.0, 66.67)
     assert out["passed"] is True and out["result"] == "Pass"
-    updates = c.sql_with("UPDATE")
+    updates = c.sql_with(UPDATE_ATTEMPT)
     assert len(updates) == 1
     sql = updates[0][0]
     for col in ("status = 'Submitted'", "submitted_at", "score", "max_score", "percentage", "passed"):
@@ -312,7 +358,7 @@ def test_submit_guards():
     c = submit_conn([], status="Submitted")
     with pytest.raises(m.ConflictError):
         m.submit_attempt(c, SCHEMA, 1, 100)
-    assert not c.sql_with("UPDATE")
+    assert not c.sql_with(UPDATE_ATTEMPT)
 
 
 def test_get_attempt_checks_owner():
@@ -324,7 +370,10 @@ def test_get_attempt_checks_owner():
 
 @pytest.fixture
 def app():
-    return Flask(__name__)
+    flask = pytest.importorskip("flask", reason="entry-point tests need real Flask")
+    if not hasattr(flask, "Flask"):  # the stub installed above
+        pytest.skip("entry-point tests need real Flask")
+    return flask.Flask(__name__)
 
 
 @pytest.fixture(autouse=True)
