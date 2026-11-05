@@ -119,6 +119,15 @@ A small number of app-level hooks from `frontend/src/hooks/` are used across thi
 - The search term is synced to the `mt_q` URL query parameter (`useUrlSearchParam`, in `shared/hooks/`) — every page in this feature uses its own parameter name (`mt_q`, `md_q`, `batch_q`) since the app has no router and all three pages share one URL.
 - Loading, error, and empty states are handled explicitly in `EmployeeTrainingPanel.jsx`: a spinner while `loading`, a dedicated message when `fetchError` is set, and a distinct empty state (with a "Clear Filters" action) when the filtered result is empty.
 
+## Quiz
+
+**Purpose**: an employee attempts a lesson quiz or an end-of-course assessment through the backend `attempt_quiz_v2` function (`docs/quiz/attemptQuiz_v2.md`).
+
+- `quiz/components/QuizPlayer.jsx` shows one question at a time: radio buttons for Single Choice, checkboxes for Multiple Choice, Previous/Next, and Submit on the last question. Loading, load-error, submit-error and result (score, percentage, pass/fail) are separate states. Pass `quizId`, or `moduleId` + `quizType` (`Lesson` / `Course Assessment`).
+- `quiz/hooks/useQuizAttempt.js` starts (or resumes) the attempt and holds the state. It exposes `answers` (map `question_id → option_ids`), `currentIndex` and `goTo(index)` so the question palette can plug in. Saved answers of a resumed attempt are restored. Submit first saves every answer that differs from what the server has, then submits; a `useSubmitGuard` lock blocks a double submit.
+- `quiz/services/quizAnswers.js` holds the pure answers-map logic. The axios calls are in `helper/quizAttemptApi.js`.
+- **Launch point**: `EmployeeTrainingPanel` accepts an optional `initialQuiz` prop (`{ quizId }` or `{ moduleId, quizType }`); when set it shows the player instead of the list, and closing returns to My Trainings.
+
 ## Manager Dashboard
 
 **Purpose**: a manager's rollup of their team's training, skill, and certification status, plus a lightweight path into reviewing pending nominations.

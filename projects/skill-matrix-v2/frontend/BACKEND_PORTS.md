@@ -35,6 +35,9 @@ This document lists the port assignments for local development. When starting ba
 ## Comments
 - `manage_comments_v2` → Port **8111**
 
+## Quiz
+- `attempt_quiz_v2` → Port **8113**
+
 ## GenAI Functions
 - `ask_question_v2` → Port **8120**
 

@@ -48,7 +48,8 @@ $allFunctions = @(
     @{name="get_combined_hierarchy_v2"; path="backend\aggregations\getCombinedHierarchy_v2"; port=8110; category="aggregations"},
     @{name="manage_comments_v2"; path="backend\aggregations\manageComments_v2"; port=8111; category="aggregations"},
     @{name="add_training_course_v2"; path="backend\data\addTrainingCourse_v2"; port=8112; category="data"},
-    
+    # Quiz functions
+    @{name="attempt_quiz_v2"; path="backend\quiz\attemptQuiz_v2"; port=8113; category="quiz"},
     # GenAI functions
     @{name="ask_question_v2"; path="backend\genai\askQuestion_v2"; port=8120; category="genai"},
     # Reports functions

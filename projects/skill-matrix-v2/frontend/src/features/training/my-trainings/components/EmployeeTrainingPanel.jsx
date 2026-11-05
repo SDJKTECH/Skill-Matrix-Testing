@@ -18,6 +18,7 @@ import StatusTabs from "../../shared/components/StatusTabs";
 import NotificationBellButton from "../../shared/components/NotificationBellButton";
 import LoadingSpinner from "../../shared/components/LoadingSpinner";
 import OpenEnrollmentGrid from "./OpenEnrollmentGrid";
+import { QuizPlayer } from "../../quiz";
 import useOpenEnrollmentBatches from "../hooks/useOpenEnrollmentBatches";
 import { countTrainingBuckets, STATUS_BUCKET_CONFIG } from "../../shared/config/trainingStatusBuckets";
 import { getAvailableYears, filterTrainingsByYear, ALL_YEARS } from "../../shared/config/trainingYearFilter";
@@ -71,8 +72,10 @@ export default function EmployeeTrainingPanel({
   initialYear,
   initialCatalogOpen = false,
   initialSearch,
+  initialQuiz = null, // { quizId } or { moduleId, quizType } — opens the quiz player
   onBack,
 }) {
+  const [activeQuiz, setActiveQuiz] = useState(initialQuiz);
   const goToTrainingBatches = useGoToTrainingBatches();
 
   const [persisted] = useState(() => (employeeId != null ? loadPersistedFilters(employeeId) : null));
@@ -354,6 +357,9 @@ export default function EmployeeTrainingPanel({
   const activeBucketLabel = MY_TRAININGS_TABS.find((b) => b.key === activeBucket)?.label;
   const scopeCtx = { activeBucketLabel, count: openEnrollment.count, actionableCount: openEnrollment.actionableCount };
   const breadcrumbTail = viewScope.scope.getBreadcrumbTail(scopeCtx);
+
+  // Quiz launch point: opening the panel with `initialQuiz` shows the player in place of the list.
+  if (activeQuiz) return <QuizPlayer {...activeQuiz} onExit={() => setActiveQuiz(null)} />;
 
   return (
     <div className="flex flex-col h-full min-h-0 p-3 gap-2">
