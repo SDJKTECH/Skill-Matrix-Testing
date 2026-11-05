@@ -25,7 +25,7 @@ const NAV_LABELS = {
   home: "Home",
   profile: "Profile",
   overviewGraph: "Overview Graph",
-  learningCenter: "Employee Learning Center",
+  learningCenter: "Learning Center",
   approvals: "Approvals",
   reports: "Reports",
   adminDashboard: "Admin Dashboard",
