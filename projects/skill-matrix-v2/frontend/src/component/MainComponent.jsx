@@ -15,6 +15,7 @@ import AdminConsoleWebhooks from "./AdminConsoleWebhooks";
 import AdminDashboard from "./AdminDashboard";
 import HomeScreen from "./HomeScreen";
 import ProfilePage from "./ProfilePage";
+import LearningCenter from "./LearningCenter";
 import { hasFullAccessRole, hasWebhookAccess } from "../helper/accessRoles";
 
 function MainComponent() {
@@ -90,7 +91,7 @@ function MainComponent() {
   // Section sub-tabs: show as horizontal tabs when a section is active (reference: ATTENDANCE | TIMESHEET bar)
   // For "update" we use a two-row admin tab bar instead, so exclude update from this list
   const sectionTabs = useMemo(() => {
-    if (activeTab === "home" || activeTab === "profile") return [];
+    if (activeTab === "home" || activeTab === "profile" || activeTab === "learning-center") return [];
     if (activeTab === "graph")
       return isMobile ? [] : [{ key: "graph", label: "Overview Graph" }];
     if (activeTab === "skills" || activeTab === "certs")
@@ -138,6 +139,7 @@ function MainComponent() {
     () => ({
       home: <HomeScreen />,
       profile: <ProfilePage />,
+      "learning-center": <LearningCenter />,
       skills: <EmployeeSkillTable />,
       certs: <EmployeeCertTable />,
       approve: <RequestList />,
@@ -162,6 +164,7 @@ function MainComponent() {
       new Set([
         "home",
         "profile",
+        "learning-center",
         "skills",
         "certs",
         "approve",
