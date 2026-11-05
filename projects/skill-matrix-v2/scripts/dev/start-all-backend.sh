@@ -99,6 +99,8 @@ FUNCTIONS=(
     # Aggregations
     "get_combined_hierarchy_v2|backend/aggregations/getCombinedHierarchy_v2|8110|aggregations"
     "manage_comments_v2|backend/aggregations/manageComments_v2|8111|aggregations"
+    # Quiz
+    "attempt_quiz_v2|backend/quiz/attemptQuiz_v2|8112|quiz"
     # GenAI
     "ask_question_v2|backend/genai/askQuestion_v2|8120|genai"
     # Reports

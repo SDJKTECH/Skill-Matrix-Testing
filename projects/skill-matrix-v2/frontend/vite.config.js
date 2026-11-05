@@ -34,6 +34,8 @@ const BACKEND_PORTS = {
   'get_combined_hierarchy_v2': 8110,
   // Comments
   'manage_comments_v2': 8111,
+  // Quiz
+  'attempt_quiz_v2': 8112,
   // GenAI functions
   'ask_question_v2': 8120,
   // Reports functions
