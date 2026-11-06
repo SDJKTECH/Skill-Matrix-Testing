@@ -15,7 +15,8 @@ import AdminConsoleWebhooks from "./AdminConsoleWebhooks";
 import AdminDashboard from "./AdminDashboard";
 import HomeScreen from "./HomeScreen";
 import ProfilePage from "./ProfilePage";
-import { hasFullAccessRole, hasWebhookAccess } from "../helper/accessRoles";
+import LearningCenter from "./LearningCenter";
+import { hasFullAccessRole, hasWebhookAccess, hasEmployeeAccess } from "../helper/accessRoles";
 
 function MainComponent() {
   const { activeTab, setActiveTab, updateSubTab, setUpdateSubTab, adminDashboardDeepLinkActive } =
@@ -28,6 +29,7 @@ function MainComponent() {
   // config, not day-to-day training/skill/cert data — see accessRoles.js's
   // WEBHOOK_ACCESS_ROLES for why this excludes HR while canSeeUpdateTab doesn't.
   const canSeeWebhooksTab = useMemo(() => hasWebhookAccess(user?.role), [user?.role]);
+  const canSeeLearningCenter = useMemo(() => hasEmployeeAccess(user?.role), [user?.role]);
 
   // "admin-dashboard" tab CONTENT is reachable two ways: full admin access
   // (canSeeUpdateTab, same as "update"/"download-report" — unchanged), OR a
@@ -143,6 +145,7 @@ function MainComponent() {
       approve: <RequestList />,
       "download-report": <DownloadReport />,
       "admin-dashboard": <AdminDashboard />,
+      "learning-center": <LearningCenter />,
       update: (
         <div className="flex min-h-[300px] sm:min-h-[519px] rounded-lg">
           <main className="flex-1 min-w-0 min-h-0">
@@ -168,8 +171,9 @@ function MainComponent() {
         "graph",
         ...(canSeeUpdateTab ? ["download-report", "update"] : []),
         ...(canSeeAdminDashboardTab ? ["admin-dashboard"] : []),
+        ...(canSeeLearningCenter ? ["learning-center"] : []),
       ]),
-    [canSeeUpdateTab, canSeeAdminDashboardTab]
+    [canSeeUpdateTab, canSeeAdminDashboardTab, canSeeLearningCenter]
   );
 
   useEffect(() => {
@@ -179,7 +183,10 @@ function MainComponent() {
     if (activeTab === "admin-dashboard" && !canSeeAdminDashboardTab) {
       setActiveTab("home");
     }
-  }, [activeTab, canSeeUpdateTab, canSeeAdminDashboardTab, setActiveTab]);
+    if (activeTab === "learning-center" && !canSeeLearningCenter) {
+      setActiveTab("home");
+    }
+  }, [activeTab, canSeeUpdateTab, canSeeAdminDashboardTab, canSeeLearningCenter, setActiveTab]);
 
   const effectiveTab = visibleTabsSet.has(activeTab) ? activeTab : "home";
   const showGraphPlaceholder = isMobile && effectiveTab === "graph";

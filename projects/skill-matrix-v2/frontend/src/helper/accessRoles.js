@@ -75,13 +75,15 @@ export function hasOrgWideViewAccess(role) {
   return ORG_WIDE_VIEW_ROLES.includes((role || "").toLowerCase());
 }
 
-// Roles that see the employee-only navigation entries (Learning Center).
-// Only the plain employee role ("user"); manager/admin/dept/hr don't get it.
-export const EMPLOYEE_ONLY_ROLES = [ROLES.USER];
+// Roles that get the Learning Center (employee-facing training/learning
+// content). Employee roles only — "user" and "manager"; admin/dept/hr are
+// administrative roles that manage training elsewhere (Update tab), so they
+// don't get this entry. Product decision, same shape as WEBHOOK_ACCESS_ROLES.
+export const EMPLOYEE_ACCESS_ROLES = [ROLES.USER, ROLES.MANAGER];
 
 /** role: the DB `employee.role` string (any casing) or null/undefined. */
-export function hasEmployeeOnlyAccess(role) {
-  return EMPLOYEE_ONLY_ROLES.includes((role || "").toLowerCase());
+export function hasEmployeeAccess(role) {
+  return EMPLOYEE_ACCESS_ROLES.includes((role || "").toLowerCase());
 }
 
 /** The logged-in user's DB employee id, wherever it happens to live on the

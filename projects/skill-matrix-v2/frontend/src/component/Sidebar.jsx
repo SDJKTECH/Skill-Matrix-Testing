@@ -15,7 +15,7 @@ import {
 import { useSkillMatrixNav } from "../context/SkillMatrixNavContext";
 import { useAuth } from "../hooks/useAuth";
 import { useIsMobile } from "../hooks/useMediaQuery";
-import { hasFullAccessRole, hasEmployeeOnlyAccess } from "../helper/accessRoles";
+import { hasFullAccessRole, hasEmployeeAccess } from "../helper/accessRoles";
 
 // Single source of truth for each nav item's name — used both as the visible
 // label when expanded and as the tooltip text when collapsed to icon-only,
@@ -99,7 +99,7 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
   const canSeeAdminAndReports = useMemo(() => hasFullAccessRole(user?.role), [user?.role]);
 
   // Learning Center is employee-only (hidden for manager/admin/dept/hr).
-  const canSeeLearningCenter = useMemo(() => hasEmployeeOnlyAccess(user?.role), [user?.role]);
+  const canSeeLearningCenter = useMemo(() => hasEmployeeAccess(user?.role), [user?.role]);
 
   const handleLearningCenter = () => {
     // "learning-center" is the tab key registered by the Learning Center route.
