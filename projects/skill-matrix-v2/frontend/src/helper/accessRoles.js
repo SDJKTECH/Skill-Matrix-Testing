@@ -75,6 +75,17 @@ export function hasOrgWideViewAccess(role) {
   return ORG_WIDE_VIEW_ROLES.includes((role || "").toLowerCase());
 }
 
+// Roles that get the Learning Center (employee-facing training/learning
+// content). Employee roles only — "user" and "manager"; admin/dept/hr are
+// administrative roles that manage training elsewhere (Update tab), so they
+// don't get this entry. Product decision, same shape as WEBHOOK_ACCESS_ROLES.
+export const EMPLOYEE_ACCESS_ROLES = [ROLES.USER, ROLES.MANAGER];
+
+/** role: the DB `employee.role` string (any casing) or null/undefined. */
+export function hasEmployeeAccess(role) {
+  return EMPLOYEE_ACCESS_ROLES.includes((role || "").toLowerCase());
+}
+
 /** The logged-in user's DB employee id, wherever it happens to live on the
  * auth object — was 9 independent copies of this exact fallback chain
  * across training-batch/manager-dashboard, feeding self/ownership checks
