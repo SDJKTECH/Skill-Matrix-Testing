@@ -9,12 +9,13 @@ import {
   FiBarChart2,
   FiCheckSquare,
   FiX,
-  FiSidebar
+  FiSidebar,
+  FiBookOpen
 } from "react-icons/fi";
 import { useSkillMatrixNav } from "../context/SkillMatrixNavContext";
 import { useAuth } from "../hooks/useAuth";
 import { useIsMobile } from "../hooks/useMediaQuery";
-import { hasFullAccessRole } from "../helper/accessRoles";
+import { hasFullAccessRole, hasEmployeeOnlyAccess } from "../helper/accessRoles";
 
 // Single source of truth for each nav item's name — used both as the visible
 // label when expanded and as the tooltip text when collapsed to icon-only,
@@ -25,6 +26,7 @@ const NAV_LABELS = {
   profile: "Profile",
   overviewGraph: "Overview Graph",
   approvals: "Approvals",
+  learningCenter: "Learning Center",
   reports: "Reports",
   adminDashboard: "Admin Dashboard",
 };
@@ -96,6 +98,14 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
 
   const canSeeAdminAndReports = useMemo(() => hasFullAccessRole(user?.role), [user?.role]);
 
+  // Learning Center is employee-only (hidden for manager/admin/dept/hr).
+  const canSeeLearningCenter = useMemo(() => hasEmployeeOnlyAccess(user?.role), [user?.role]);
+
+  const handleLearningCenter = () => {
+    // "learning-center" is the tab key registered by the Learning Center route.
+    setActiveTab("learning-center");
+    onNavigate?.();
+  };
   const handleHome = () => {
     setActiveTab("home");
     onNavigate?.();
@@ -136,6 +146,7 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
     if (key === "profile") return activeTab === "profile";
     if (key === "overviewGraph") return activeTab === "graph";
     if (key === "approvals") return activeTab === "approve";
+    if (key === "learningCenter") return activeTab === "learning-center";
     if (key === "reports") return activeTab === "download-report";
     if (key === "admin") return activeTab === "update";
     if (key === "adminDashboard") return activeTab === "admin-dashboard";
@@ -272,6 +283,20 @@ function Sidebar({ onNavigate, chatOpen = false, mobileOpen = false, onMobileClo
             {showLabels && <span className="truncate">{NAV_LABELS.approvals}</span>}
           </button>
         </div>
+
+        {/* Learning Center - employees only */}
+        {canSeeLearningCenter && (
+          <div className="relative" onMouseEnter={!isMobile ? (e) => handleMenuHover("learningCenter", e) : undefined}>
+            <button
+              type="button"
+              onClick={handleLearningCenter}
+              className={itemClass("learningCenter")}
+            >
+              <FiBookOpen className="h-5 w-5 shrink-0" />
+              {showLabels && <span className="truncate">{NAV_LABELS.learningCenter}</span>}
+            </button>
+          </div>
+        )}
 
         {/* Reports - only if allowed */}
         {canSeeAdminAndReports && (

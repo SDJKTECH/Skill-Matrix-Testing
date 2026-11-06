@@ -75,6 +75,15 @@ export function hasOrgWideViewAccess(role) {
   return ORG_WIDE_VIEW_ROLES.includes((role || "").toLowerCase());
 }
 
+// Roles that see the employee-only navigation entries (Learning Center).
+// Only the plain employee role ("user"); manager/admin/dept/hr don't get it.
+export const EMPLOYEE_ONLY_ROLES = [ROLES.USER];
+
+/** role: the DB `employee.role` string (any casing) or null/undefined. */
+export function hasEmployeeOnlyAccess(role) {
+  return EMPLOYEE_ONLY_ROLES.includes((role || "").toLowerCase());
+}
+
 /** The logged-in user's DB employee id, wherever it happens to live on the
  * auth object — was 9 independent copies of this exact fallback chain
  * across training-batch/manager-dashboard, feeding self/ownership checks
