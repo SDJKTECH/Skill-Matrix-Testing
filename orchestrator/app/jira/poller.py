@@ -141,18 +141,21 @@ class JiraPoller:
                 self.tracker.move(task, QUEUED)
 
             # Each Jira project is its own project, all working in this clone.
-            queued_ids = list(
-                session.scalars(
-                    select(Task.id)
-                    .join(Milestone, Task.milestone_id == Milestone.id)
-                    .join(Project, Milestone.project_id == Project.id)
-                    .where(
-                        Project.local_path == str(self.repository_path),
-                        Task.status == TaskStatus.QUEUED,
+            # Not while a story run is still marking its tasks BLOCKED: they are
+            # saved as queued first, and must not be scheduled in between.
+            with creation_lock:
+                queued_ids = list(
+                    session.scalars(
+                        select(Task.id)
+                        .join(Milestone, Task.milestone_id == Milestone.id)
+                        .join(Project, Milestone.project_id == Project.id)
+                        .where(
+                            Project.local_path == str(self.repository_path),
+                            Task.status == TaskStatus.QUEUED,
+                        )
+                        .order_by(Task.id)
                     )
-                    .order_by(Task.id)
                 )
-            )
 
         return self._schedule(queued_ids)
 

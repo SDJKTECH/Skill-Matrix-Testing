@@ -13,6 +13,7 @@ from orchestrator.app.core.config import Settings, worktrees_root
 from orchestrator.app.core.exceptions import PlanningError
 from orchestrator.app.db.models import StoryRun, Task
 from orchestrator.app.jira.client import JiraApi
+from orchestrator.app.jira.creator import creation_lock
 from orchestrator.app.jira.importer import (
     ensure_repository_milestone,
     sync_jira_items,
@@ -110,6 +111,21 @@ def start_story_run(
             f"(Jira: {sorted(keys)}, plan: {sorted(plan)}). Plan the story again."
         )
 
+    # The poller schedules every queued task. Until the blockers below are recorded,
+    # a waiting task would look runnable, so the poller is kept out until they are.
+    with creation_lock:
+        return _create_tasks(session, settings, run, bundle, plan, keys)
+
+
+def _create_tasks(
+    session: Session,
+    settings: Settings,
+    run: StoryRun,
+    bundle: StoryBundle,
+    plan: dict,
+    keys: list[str],
+) -> StoryRunStart:
+    """Import the sub-tasks as tasks and make the waiting ones BLOCKED."""
     existing = session.scalars(select(Task.jira_key).where(Task.jira_key.in_(keys)))
     already = sorted(key for key in existing if key)
     if already:
@@ -118,7 +134,7 @@ def start_story_run(
             "the poller leaves a Story's sub-tasks to story runs."
         )
 
-    repository = Path(settings.repository_path)
+    repository = Path(str(settings.repository_path))
     milestone_id = ensure_repository_milestone(
         session, repository, settings.github_repo
     )

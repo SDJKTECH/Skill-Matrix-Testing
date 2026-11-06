@@ -235,7 +235,8 @@ def release_ready(
     released: list[Task] = []
 
     for task in waiting:
-        name = f"task-{task.id}"
+        # The name the task was created with (smt-22, task-5 ...), from its branch.
+        name = (task.branch_name or f"task-{task.id}").removeprefix("agent/")
         base = prepare_story_branch(task, f"{remote}/{base_branch}") or (
             f"{remote}/{base_branch}"
         )

@@ -195,6 +195,7 @@ class StoryDocumenter:
                 effort=decision.effort,
                 max_budget_usd=self.settings.max_task_cost_usd,
                 agent="documenter",
+                agent_definition=repository / ".claude" / "agents" / "documenter.md",
                 permission_mode=self.settings.claude_permission_mode,
                 allowed_tools=DOCUMENTER_TOOLS,
             )

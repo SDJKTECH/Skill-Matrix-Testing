@@ -342,8 +342,11 @@ def main() -> None:
     if args.create_issue:
         create_issue(backend, github, args.create_issue, args.issue_body)
 
-    publish = not args.no_publish
-    open_pr = publish and not args.no_pr
+    # PUBLISH_BRANCHES and OPEN_PULL_REQUEST in .env decide; the --no-publish and
+    # --no-pr flags can only turn them off.
+    env_settings = Settings(_env_file=ROOT / ".env")
+    publish = env_settings.publish_branches and not args.no_publish
+    open_pr = publish and env_settings.open_pull_request and not args.no_pr
     comments = not args.no_comments
     read_only_api = backend == "rest" and not github.can_write
 

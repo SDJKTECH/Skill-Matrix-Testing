@@ -336,6 +336,10 @@ class StorySequencer:
                 effort=decision.effort,
                 max_budget_usd=self.settings.max_task_cost_usd,
                 agent="story-sequencer",
+                agent_definition=repository
+                / ".claude"
+                / "agents"
+                / "story-sequencer.md",
                 permission_mode=self.settings.claude_permission_mode,
                 allowed_tools=READ_ONLY_TOOLS,
             )

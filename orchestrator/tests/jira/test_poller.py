@@ -208,3 +208,45 @@ def test_the_poller_does_not_import_while_a_plan_is_being_made(
 
     thread.join(timeout=30)
     assert done.is_set()
+
+
+def test_the_poller_reads_queued_tasks_only_after_a_story_run_has_blocked_its_own(
+    env, monkeypatch
+) -> None:
+    import threading
+
+    class SecondEntryWaits:
+        """Lets the first use of the lock through and holds the second one."""
+
+        def __init__(self) -> None:
+            self.entries = 0
+            self.second = threading.Event()
+            self.release = threading.Event()
+
+        def __enter__(self):
+            self.entries += 1
+
+            if self.entries == 2:
+                self.second.set()
+                self.release.wait(timeout=10)
+
+        def __exit__(self, *exc) -> bool:
+            return False
+
+    jira_poller, _, _ = make_poller(env, [work("SG-3", "SG-2", [EPIC, STORY])])
+    submitted: list[list[int]] = []
+    monkeypatch.setattr(
+        jira_poller, "_schedule", lambda ids: submitted.append(ids) or ids
+    )
+    gate = SecondEntryWaits()
+    monkeypatch.setattr(poller, "creation_lock", gate)
+    thread = threading.Thread(target=jira_poller.poll_once, daemon=True)
+    thread.start()
+
+    # Imported (first use of the lock); now it waits to read the queued tasks.
+    assert gate.second.wait(timeout=10)
+    assert submitted == []
+
+    gate.release.set()
+    thread.join(timeout=30)
+    assert len(submitted) == 1 and len(submitted[0]) == 1

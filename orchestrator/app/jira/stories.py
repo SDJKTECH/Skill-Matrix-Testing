@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from orchestrator.app.core.config import Settings, get_settings
 from orchestrator.app.core.exceptions import OrchestratorError
@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 STORY_TYPE = "story"
 
 # Tasks finish on several threads; the Story branch is merged into one at a time.
-_story_lock = threading.Lock()
+# Re-entrant: claiming the branch takes it too, and the callers may already hold it.
+_story_lock = threading.RLock()
 
 # Returns the keys of a Story's issues in Jira that are not finished.
 OpenChildren = Callable[[JiraItem], set[str]]
@@ -84,21 +85,35 @@ def claim_story_branch(item: JiraItem, repository: Path, worktrees_root: Path) -
     remote, or its worktree folder) are never reused: the new run gets
     'story-<key>-attempt-2', then '-attempt-3', and so on. A Story that already
     has a branch keeps it.
+
+    Tasks run on several threads, each with its own database session and its own
+    copy of the Story. The claim is made under the lock, the name is re-read first
+    so a claim another task just made is seen, and it is saved at once so the next
+    task finds it.
     """
-    if item.branch_name:
-        return
+    with _story_lock:
+        session = object_session(item)
 
-    base = _base_story_name(item)
-    name, attempt = base, 1
+        if session is not None:
+            session.refresh(item, attribute_names=["branch_name"])
 
-    while (
-        branch_exists_anywhere(repository, f"agent/{name}")
-        or (worktrees_root.expanduser().resolve() / name).exists()
-    ):
-        attempt += 1
-        name = f"{base}-attempt-{attempt}"
+        if item.branch_name:
+            return
 
-    item.branch_name = f"agent/{name}"
+        base = _base_story_name(item)
+        name, attempt = base, 1
+
+        while (
+            branch_exists_anywhere(repository, f"agent/{name}")
+            or (worktrees_root.expanduser().resolve() / name).exists()
+        ):
+            attempt += 1
+            name = f"{base}-attempt-{attempt}"
+
+        item.branch_name = f"agent/{name}"
+
+        if session is not None:
+            session.commit()
 
     if attempt > 1:
         logger.info(
@@ -425,10 +440,11 @@ class StoryDelivery:
 
     def _open_pull_request(self, item: JiraItem, task: Task, branch: str) -> None:
         """Open the Story's pull request and show it on each of its tasks."""
+        self._document(item, task, branch)
         if self.publisher is None:
             return
 
-        self._document(item, task, branch)
+        
 
         url = self.publisher.open_pull_request(
             task,

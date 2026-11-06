@@ -146,9 +146,8 @@ def test_start_creates_one_task_per_sub_task_from_the_base_branch(env) -> None:
         first, second = started.tasks
         assert run.status == "running" and started.failed == {}
         assert (first.jira_key, second.jira_key) == ("SMT-10", "SMT-11")
-        assert (
-            tmp_path / "wt" / f"task-{first.id}" / "only_on_development.txt"
-        ).exists()
+        assert first.branch_name == "agent/smt-10"
+        assert (tmp_path / "wt" / "smt-10" / "only_on_development.txt").exists()
         assert first.story_run_id == run.id == second.story_run_id
         assert json.loads(first.files) == ["a.py", "b.py"]
         assert (first.complexity, first.parallel_safe) == ("small", True)
@@ -293,3 +292,30 @@ def test_endpoints_plan_then_run(env) -> None:
     assert by_key["SMT-11"]["status"] == "blocked"
     assert by_key["SMT-11"]["blocked_by"] == [by_key["SMT-10"]["task_id"]]
     assert client.post("/stories/SMT-9/run").status_code == 404
+
+
+def test_the_poller_is_kept_out_until_the_blockers_are_recorded(
+    env, monkeypatch
+) -> None:
+    from orchestrator.app.jira import story_run
+    from orchestrator.app.jira.creator import creation_lock
+
+    factory, settings, _ = env
+    held = []
+    real = story_run.assign_blockers
+
+    def spy(*args, **kwargs):
+        held.append(creation_lock.locked())
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(story_run, "assign_blockers", spy)
+
+    with factory() as session:
+        run = planned_run(session)
+        started = start_story_run(session, settings, make_api(CHILDREN), run)
+
+        # The tasks are saved as queued first; the lock covers until SMT-11 waits.
+        assert held == [True]
+        assert started.tasks[1].status == TaskStatus.BLOCKED
+
+    assert not creation_lock.locked()

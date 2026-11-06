@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import create_engine, inspect, select, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from orchestrator.app.db.database import Base
 from orchestrator.app.db.migrations import migrate_jira_item_columns
@@ -18,8 +18,10 @@ from orchestrator.app.db.models import (
 from orchestrator.app.jira.documenter import DocResult
 from orchestrator.app.jira.importer import sync_jira_items
 from orchestrator.app.jira.merged import sync_merged_stories
+from orchestrator.app.jira.models import JiraItem
 from orchestrator.app.jira.stories import (
     StoryDelivery,
+    claim_story_branch,
     prepare_story_branch,
     story_branch_name,
     story_item,
@@ -115,6 +117,27 @@ def test_a_story_with_an_old_branch_gets_a_new_attempt_name(env) -> None:
     assert "engine.py" not in git(
         repository, "ls-tree", "-r", "--name-only", "agent/story-sg-2"
     )
+
+
+def test_two_sessions_claim_the_same_story_branch(env) -> None:
+    # Two tasks of a Story start together, each with its own database session and
+    # its own copy of the Story that has no branch yet. The second must see the
+    # name the first claimed instead of picking another attempt name.
+    session_a, _, repository, root = env
+    git(repository, "branch", "agent/story-sg-2")
+    (task,) = story_tasks(env, "SG-3")
+    item_a = story_item(task)
+
+    with Session(bind=session_a.get_bind(), expire_on_commit=False) as session_b:
+        item_b = session_b.get(JiraItem, item_a.id)
+        assert item_b.branch_name is None
+
+        claim_story_branch(item_a, repository, root)
+        git(repository, "branch", item_a.branch_name)  # the first task's branch exists
+        claim_story_branch(item_b, repository, root)
+
+        assert item_a.branch_name == "agent/story-sg-2-attempt-2"
+        assert item_b.branch_name == item_a.branch_name
 
 
 def test_a_task_without_a_story_has_none(env) -> None:
@@ -240,7 +263,8 @@ def test_a_dependent_task_is_cut_from_the_story_branch(env) -> None:
     released = release_ready(session, repository, "origin", "main", jira_only=True)
 
     assert released == [waiting]
-    assert (root / f"task-{waiting.id}" / "engine.py").is_file()
+    assert waiting.branch_name == "agent/sg-4"
+    assert (root / "sg-4" / "engine.py").is_file()
     assert not (repository / "engine.py").exists()
 
 

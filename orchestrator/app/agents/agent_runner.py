@@ -1,5 +1,6 @@
 # Builds the Claude Code CLI command and runs it as a subprocess.
 # Also strips secrets from the child environment and registers the process.
+import json
 import logging
 import os
 import re
@@ -178,6 +179,33 @@ def split_claude_command(claude_command: str) -> list[str]:
     return [token.strip("\"'") for token in tokens] or [claude_command]
 
 
+def inline_agent_definition(name: str, definition: Path) -> str:
+    """JSON for `--agents`, built from an agent's .md file.
+
+    Lets an agent run from a folder that has no .claude/agents of its own (for
+    example a project folder that is a separate git repository).
+    """
+    text = definition.read_text(encoding="utf-8")
+    parts = text.split("---", 2)
+    front, body = (
+        (parts[1], parts[2])
+        if text.startswith("---") and len(parts) == 3
+        else ("", text)
+    )
+    fields = {}
+    for line in front.splitlines():
+        key, _, value = line.partition(":")
+        if value.strip():
+            fields[key.strip()] = value.strip()
+    agent: dict[str, object] = {
+        "description": fields.get("description", name),
+        "prompt": body.strip(),
+    }
+    if fields.get("tools"):
+        agent["tools"] = [t.strip() for t in fields["tools"].split(",")]
+    return json.dumps({name: agent})
+
+
 def build_claude_command(
     *,
     claude_command: str,
@@ -189,6 +217,7 @@ def build_claude_command(
     permission_mode: str | None = None,
     allowed_tools: list[str] | None = None,
     resume: str | None = None,
+    agent_definition: Path | None = None,
 ) -> list[str]:
     """Build a non-interactive Claude Code CLI command."""
     if not prompt.strip():
@@ -209,6 +238,10 @@ def build_claude_command(
     if agent:
         if not agent.strip():
             raise ValueError("Agent name cannot be empty.")
+        if agent_definition is not None:
+            command.extend(
+                ["--agents", inline_agent_definition(agent, agent_definition)]
+            )
         command.extend(["--agent", agent])
 
     if model:

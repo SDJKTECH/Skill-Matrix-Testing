@@ -1,12 +1,40 @@
 # Creates a task together with its Git branch and worktree.
 # Validates the input and cleans up if the database save fails.
+import re
 from pathlib import Path
 
 from sqlalchemy.orm import Session
 
 from orchestrator.app.core.exceptions import RepositoryError
 from orchestrator.app.db.models import Milestone, Task, TaskStatus
-from orchestrator.app.vcs.git_manager import create_worktree, remove_worktree
+from orchestrator.app.vcs.git_manager import (
+    branch_exists_anywhere,
+    create_worktree,
+    remove_worktree,
+)
+
+
+def worktree_name(task: Task, repository: Path, worktrees_root: Path) -> str:
+    """The name of a task's worktree and branch (agent/<name>).
+
+    A Jira task is named after its issue, e.g. 'smt-22'; any other task is
+    'task-<id>'. If an earlier run already used the name (its branch, locally or on
+    a remote, or its folder), '-attempt-2', '-attempt-3' ... is added instead of
+    reusing it.
+    """
+    base = re.sub(r"[^A-Za-z0-9_-]+", "-", (task.jira_key or "").lower()).strip("-")
+
+    if not base:
+        return f"task-{task.id}"
+
+    name, attempt = base, 1
+    root = worktrees_root.expanduser().resolve()
+
+    while branch_exists_anywhere(repository, f"agent/{name}") or (root / name).exists():
+        attempt += 1
+        name = f"{base}-attempt-{attempt}"
+
+    return name
 
 
 def create_task(
@@ -53,7 +81,7 @@ def create_task(
     session.add(task)
     session.flush()
 
-    task_id = f"task-{task.id}"
+    task_id = worktree_name(task, Path(project.local_path), worktrees_root)
     worktree_path = None
 
     try:

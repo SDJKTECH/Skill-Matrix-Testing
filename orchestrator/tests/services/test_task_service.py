@@ -173,3 +173,45 @@ def test_create_task_cuts_the_worktree_from_the_given_base_branch(task_environme
         )
 
         assert (worktrees_root / f"task-{task.id}" / "only_on_development.txt").exists()
+
+
+def test_a_jira_task_is_named_after_its_issue(task_environment):
+    test_session, milestone_id, _, worktrees_root = task_environment
+
+    with test_session() as session:
+        task = create_task(
+            session=session,
+            milestone_id=milestone_id,
+            title="Sidebar entry",
+            worktrees_root=worktrees_root,
+            jira_key="SMT-22",
+        )
+
+        assert task.branch_name == "agent/smt-22"
+        assert task.worktree_path == str(worktrees_root / "smt-22")
+        assert (worktrees_root / "smt-22" / "README.md").exists()
+
+
+def test_a_second_run_of_the_same_issue_gets_a_new_name(task_environment):
+    test_session, milestone_id, repository, worktrees_root = task_environment
+
+    with test_session() as session:
+        first = create_task(
+            session=session,
+            milestone_id=milestone_id,
+            title="Sidebar entry",
+            worktrees_root=worktrees_root,
+            jira_key="SMT-22",
+        )
+        second = create_task(
+            session=session,
+            milestone_id=milestone_id,
+            title="Sidebar entry",
+            worktrees_root=worktrees_root,
+            jira_key="SMT-22",
+        )
+
+        assert first.branch_name == "agent/smt-22"
+        assert second.branch_name == "agent/smt-22-attempt-2"
+        assert second.worktree_path == str(worktrees_root / "smt-22-attempt-2")
+        assert (worktrees_root / "smt-22-attempt-2" / "README.md").exists()

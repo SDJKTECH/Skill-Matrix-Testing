@@ -29,7 +29,7 @@ logs/
 .idea/
 .DS_Store
 Thumbs.db
-
+orchestrator.db.bak
 # Orchestrator worktrees (projects/ is tracked, NOT ignored)
 agent-worktrees/
 
